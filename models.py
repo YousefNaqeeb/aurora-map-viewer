@@ -17,11 +17,10 @@ class BaseSystemObject:
         # String representation with or without miscellaneous data
         if self.miscellaneous_data == "":
             return f"name: {self.name} position: {self.x}, {self.y}."
-        else:
-            return f"{self.name} position: {self.x}, {self.y} {self.miscellaneous_data}."
+        return f"{self.name} position: {self.x}, {self.y} {self.miscellaneous_data}."
     def __iter__(self):
         #returns a tuple with position data for checking distance etc
-        return (self.x, self.y)
+        return iter((self.x, self.y))
 # Class for objects with electromagnetic and thermal signatures
 @dataclass
 class BaseDetectableObject(BaseSystemObject):

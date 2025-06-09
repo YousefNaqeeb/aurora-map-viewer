@@ -1,10 +1,10 @@
-from math import dist
+#from math import dist
 from db_utils import SQLClass
 # Main program
 sql = SQLClass()
-gameID = sql.get_gameID()
-race_info = sql.get_race(gameID)
-list_system_objects =sql.get_system_data(input("enter the system you would like to select, or leave blank to see a list of systems."), race_info, gameID)
+game_id = sql.get_game_id()
+race_info = sql.get_race(game_id)
+list_system_objects =sql.get_system_data(input("enter the system you would like to select, or leave blank to see a list of systems."), race_info, game_id)
 
 # Main menu loop
 while True:
@@ -16,20 +16,20 @@ while True:
     if User_input == 0:
         break
     elif User_input == 1:
-        gameID =sql.get_gameID()
-        race_info =sql.get_race(gameID)
-        list_system_objects =sql.get_system_data(input("enter the system you would like to select, or leave blank to see a list of systems."), race_info, gameID)
+        game_id =sql.get_game_id()
+        race_info =sql.get_race(game_id)
+        list_system_objects =sql.get_system_data(input("enter the system you would like to select, or leave blank to see a list of systems."), race_info, game_id)
     elif User_input == 2:
-        race_info =sql.get_race(gameID)
-        list_system_objects =sql.get_system_data(input("enter the system you would like to select, or leave blank to see a list of systems."), race_info, gameID)
+        race_info =sql.get_race(game_id)
+        list_system_objects =sql.get_system_data(input("enter the system you would like to select, or leave blank to see a list of systems."), race_info, game_id)
     elif User_input == 3:
-        list_system_objects =sql.get_system_data(input("enter the system you would like to select, or leave blank to see a list of systems."), race_info, gameID)
+        list_system_objects =sql.get_system_data(input("enter the system you would like to select, or leave blank to see a list of systems."), race_info, game_id)
     elif User_input == 4:
         # Display all objects in current system with pagination (15 items per page)
         print("here is a list of all objects in the selected system")
         for index, value in enumerate(list_system_objects, start=1):
             print(f"{index}, {value}")
-            exit = False
+            exit_loop = False
             if index % 15 == 0 and index > 0:
                 while True: 
                     try:
@@ -37,12 +37,12 @@ while True:
                         if User_input ==1:
                             break
                         elif User_input == 2:
-                            exit = True
+                            exit_loop = True
                             break
                         else:
                             print("Invalid option.")
                     except Exception as e:
                         print("Invalid data")
-            if exit:
+            if exit_loop:
                 break
 sql.close()
