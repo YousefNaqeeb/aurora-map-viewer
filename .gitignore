@@ -192,3 +192,8 @@ cython_debug/
 #  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+#project specific stuff to ignore
+*.db
+db_browser.py
+tables.docx
+test.py

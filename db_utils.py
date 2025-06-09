@@ -1,0 +1,198 @@
+import sqlite3
+from math import ceil
+from models import BaseSystemObject, BaseDetectableObject, PlayerPop, PlayerFleet, PlayerMissileSalvo
+import time
+class SQLClass:
+    # class to manage connections and queries also get data from db.
+    def __init__(self):
+        #connects to auroraDB.db as soon as it is instantiated
+        self.connection = None
+        self.cursor = None
+        self.connect()
+    def connect(self):
+        try:
+            self.connection = sqlite3.connect("auroraDB.db")
+            self.cursor = self.connection.cursor()
+        except Exception as e:
+            print(f"Database connection error: {str(e)}")
+# Helper function to     SQL queries with optional parameters
+    def execute(self, query, variables = ()):
+        self.cursor.execute(query, variables)
+        return self.cursor.fetchall()
+    def close(self):
+        self.connection.close()
+        self.connection = None
+        self.cursor = None        
+    # Function to get game ID by name or from a list
+    def get_gameID(self):
+        while True:
+            game_name =input("Enter game name to load, or leave blank to see list of games.")
+            if not game_name:
+                #Display list of available games
+                games =self.execute("SELECT GameName FROM FCT_Game")
+                for index, value in enumerate(games, start=1):
+                    print(f"{index}. {value}")
+                try:
+                    # Get selected game ID by index
+                    gameID =self.execute("SELECT GameID from FCT_Game WHERE GameName = ?", (games[int(input("enter the number of the game you would like to select.")) - 1][0],))
+                    return int(gameID[0][0])
+                except:
+                    print("Invalid option.")
+            else:
+                # Get game ID directly by name
+                gameID = self.execute("SELECT GameID from FCT_Game WHERE GameName = ?", (game_name,))
+                if not gameID:
+                    print("game not found. try again.")
+                else:
+                    return int(gameID[0][0])
+
+    # Function to get player race ID
+    def get_race(self, gameID):
+        # Get player races (non-NPR) for the game
+        race_info =  self.execute("SELECT RaceID, RaceTitle FROM FCT_Race WHERE NPR = 0 AND GameID = ?", (gameID,))
+        if len(race_info) == 1:
+            # If only one race, select it automatically
+            return race_info[0][0]
+        # Display list of races if multiple are available
+        print("you can pick from the following options.")
+        for index, value in enumerate(race_info, start=1):
+            print(f"{index}, {value[1]}")
+        # Get user selection
+        while True:
+            try:
+                return race_info[int(input("enter the number of the race you would like to view.")) -1][0]
+            except:
+                print("invalid option")
+
+    # Function to load all system objects for the specified system
+    # This is the main data retrieval function that populates the list of objects in a star system
+    def get_system_data(self, system_name, raceID, gameID):
+        while True:
+            if not system_name == "":
+                try:
+                    # Attempt to get system ID by name if a specific system was requested
+                    # FCT_RaceSysSurvey table contains systems that have been discovered by each race
+                    systemID = self.execute("SELECT SystemID FROM FCT_RaceSysSurvey  WHERE name = ? AND raceID = ?", (system_name, raceID))[0][0]
+                    break
+                except:
+                    system_name =input("System not found. try again, or leave blank to view possible systems.")
+            else:
+                # If no system name provided, display list of all systems discovered by this race
+                list_systemIDs = self.execute("SELECT name, SystemID FROM FCT_RaceSysSurvey  WHERE raceID = ? AND GameID = ?", (raceID, gameID))
+                print("You can select one of the following systems.")
+                for index, value in enumerate(list_systemIDs, start=1):
+                    print(f"{index}, {value[0]}")
+                # Get user selection from the displayed list
+                while True:
+                    try:
+                        num =int(input("Enter the number for the system you would like to select.")) -1
+                        system_name = list_systemIDs[num][0]
+                        systemID = list_systemIDs[num][1]
+                        break
+                    except (ValueError, IndexError):
+                        print("invalid option")
+        # System found, begin loading all objects
+        print(f"Loading system {system_name}")
+        start_time = time.time()
+        #Start loadin lifepods in system
+        self.cursor.execute("SELECT Xcor, Ycor, ShipName, Crew FROM FCT_Lifepods WHERE GameID = ? AND SystemID = ?", (gameID, systemID))
+        list_system_objects = [BaseSystemObject(f"lifepod from {row[2]}", row[0], row[1], f"the lifepod has {row[3]} survivers on board") for row in self.cursor.fetchall()]
+        # Load mass driver packets and their contents
+        self.cursor.execute("""SELECT FCT_MassDriverPackets.*, FCT_Population.PopName FROM FCT_MassDriverPackets 
+        JOIN FCT_Population ON MassDriverDest = DestID 
+        WHERE SysID = ? AND FCT_MassDriverPackets.GameID = ?""", (int(systemID), int(gameID)))
+        for row in self.cursor.fetchall():
+            # Extract mineral contents from the packet, and match the numbers to the correct mineral
+            list_indexes =[i for i in range(13, 24) if row[i] > 0]
+            list_minerals =["Duranium", "Neutronium", "Corbomite", "Tritanium", "Boronide", "Mercassium", "Vendarite", "Sorium", "Uridium", "Corundium", "Gallicite"]
+            packet_contents =[f"{list_minerals[i -13]}: {ceil(row[i])} tons" for i in list_indexes ]
+            list_system_objects +=BaseSystemObject(f"mass driver packet destination {row[-1]}", row[7], row[8], f"the packet contains {', '.join(packet_contents)}")
+            #load grav servay locations
+        self.cursor.execute("SELECT * FROM  FCT_SurveyLocation WHERE GameID = ? AND SystemID = ?", (gameID, systemID))
+        list_system_objects +=[BaseSystemObject(f"Servay Point {row[3]}", row[4], row[-1], "") for row in self.cursor.fetchall()]
+        #load discovered jumppoints
+        self.cursor.execute("""SELECT FCT_JumpPoint.WPLink, Xcor, Ycor, Explored FROM FCT_JumpPoint
+    JOIN FCT_RaceJumpPointSurvey ON FCT_JumpPoint.WarpPointID = FCT_RaceJumpPointSurvey.WarpPointID
+    WHERE FCT_RaceJumpPointSurvey.RaceID = ? AND FCT_JumpPoint.GameID = ? AND Charted = 1 AND SystemID = ?""", (raceID, gameID, systemID))
+        for row in self.cursor.fetchall():
+            if row[3] == 1:
+                # For explored jump points, show destination system
+                result = self.execute("""SELECT  FCT_JumpPoint.SystemID, FCT_RaceSysSurvey .Name FROM FCT_JumpPoint
+                        JOIN FCT_RaceSysSurvey ON FCT_JumpPoint.SystemID = FCT_JumpPoint.SystemID
+                        WHERE FCT_JumpPoint.WarpPointID = ?""", (row[0],))
+                list_system_objects.append(BaseSystemObject(f"Jumppoint too the system {result[1]}", row[1], row[2], ""))
+            else:
+                #for unexplored JPs
+                list_system_objects.append(BaseSystemObject(f"Unexplored Jumppoint", row[1], row[2], ""))
+        #load wrecks
+        self.cursor.execute("""SELECT FCT_Wrecks.ClassID, FCT_ShipClass.ClassName, xcor, ycor FROM FCT_Wrecks 
+        JOIN FCT_ShipClass ON FCT_Wrecks.ClassID = FCT_ShipClass.ShipClassID
+        WHERE FCT_Wrecks.gameID = ? and FCT_Wrecks.SystemID = ?""", (gameID, systemID))
+        list_system_objects +=[BaseSystemObject(f"Wreck of a {row[1]} class ship", row[2], row[3], "") for row in self.cursor.fetchall()]
+        #load only uncolonized bodies, to avoid having duplicated objects
+        for row in self.execute("""SELECT FCT_SystemBody.Name, xcor, ycor, PlanetNumber, OrbitNumber FROM FCT_SystemBody
+        WHERE FCT_SystemBody.Name NOT IN
+        (SELECT FCT_Population.PopName FROM FCT_Population WHERE FCT_Population.RaceID = ? AND FCT_Population.SystemID = ? AND FCT_Population.GameID = ?)
+        AND FCT_SystemBody.GameID = ? AND FCT_SystemBody.systemID = ?""", (raceID, systemID, gameID, gameID, systemID)):
+            if row[0] != "":
+                                list_system_objects.append(BaseSystemObject(row[0], row[1], row[2], ""))
+            elif row[4] == 0:
+                # makes sure all system bodies have a name. this branch makes sure planets are named correctly
+                list_system_objects.append(BaseSystemObject(f"{system_name} {row[3]}", row[1], row[2], ""))
+            else:
+                #this handles moons
+                list_system_objects.append(BaseSystemObject(f"{system_name} {row[3]} moon {row[4]}", row[1], row[2], ""))
+        # Load colonized bodies not belonging to the player race
+        self.cursor.execute("""SELECT EMSignature, ThermalSignature, PopulationName, xcor, ycor FROM FCT_AlienPopulation
+                    JOIN FCT_systemBody ON FCT_Population.SystemBodyID = FCT_systemBody .SystemBodyID
+                    JOIN FCT_Population ON FCT_AlienPopulation.PopulationID = FCT_Population.PopulationID
+                    WHERE FCT_AlienPopulation.gameID = ? and ViewingRaceID = ? AND FCT_Population.SystemID = ?""", (gameID, raceID, systemID))
+        list_system_objects +=[BaseDetectableObject(row[2], row[3], row[4], "", row[0], row[1]) for row in self.cursor.fetchall()]
+        # Load colonized bodies belonging to the player
+        for row in self.execute("""SELECT  PopulationID, Population, PopName, FCT_SystemBody.Xcor, FCT_SystemBody.Ycor FROM FCT_Population 
+        JOIN FCT_SystemBody ON FCT_Population.SystemBodyID = FCT_SystemBody.SystemBodyID
+        WHERE FCT_Population.GameID = ? AND FCT_Population.RaceID = ? AND FCT_Population.SystemID = ?""", (gameID, raceID, systemID,)):
+            try:
+                # Get tracking station info (DSP = Deep Space Tracking station)
+                dsp_amount =self.execute("SELECT Amount FROM FCT_PopulationInstallations WHERE GameID = ? AND PopID = ? AND PlanetaryInstallationID = 11", (gameID, row[0],))[0]
+                dsp_strength = self.execute("SELECT PlanetarySensorStrength FROM FCT_Race WHERE RaceID = ? AND GameID = ?", (raceID, gameID))[0][0]
+                dsp_strength *= dsp_amount # Calculate total tracking strength
+            except:
+                dsp_strength = 0
+            list_system_objects.append(PlayerPop(row[2], row[3], row[4], "", dsp_strength, row[1]))
+            #load fleet data
+        for row in self.execute("""SELECT FleetID, FleetName, Speed, Xcor, Ycor FROM FCT_Fleet WHERE GameID = ? AND SystemID = ? AND RaceID = ?""", (gameID, systemID, raceID)):
+            #access FCT_Fleet, EMSensorStrength for EM, PassiveSensorStrength for th
+            try: #to handle fleets with ships
+                ships, sensor_data, last_classID = [], [], 0
+                for i in self.execute("SELECT ShipClassID, ShipName FROM FCT_Ship WHERE FleetID = ?", (row[0],)):
+                    ships.append(i[1])
+                    new_classID= i[0]
+                    if last_classID != new_classID:
+                        #makes sure no data is duplicated 
+                        last_classID = new_classID
+                        sensor_data.append(self.execute("SELECT EMSensorStrength, PassiveSensorStrength  FROM FCT_ShipClass WHERE ShipClassID = ?", (new_classID,))[0])
+                em = max(item[0] for item in sensor_data)
+                th = max(item[1] for item in sensor_data)
+                list_system_objects.append(PlayerFleet(row[1], row[3], row[4], "", row[2], em, th, f"{', '.join(ships)}"))        
+            except (ValueError, IndexError): #to handle fleets with no ships
+                list_system_objects.append(PlayerFleet(row[1], row[3], row[4], "", 0, 0, 0, "no ships in fleet"))
+        #load player missiles
+        list_system_objects +=[PlayerMissileSalvo(f"Missile Salvo of {row[6]} missiles", row[3], row[4], "", row[5], row[8], row[7]) for row in self.execute("""SELECT MissileSalvoID, TargetType, TargetID, xcor, ycor, MissileSpeed, Name,
+                                    COUNT(FCT_Missile.SalvoID) as MissileCount,
+                CASE
+                    WHEN TargetType = 1 THEN FCT_Ship.ShipName
+                    WHEN TargetType = 4 THEN PopName
+                    WHEN TargetType = 16 THEN 'shipyards in orbit of ' || PopName
+                    
+                END as TargetName
+            FROM FCT_MissileSalvo
+            JOIN FCT_MissileType ON FCT_MissileSalvo.MissileID = FCT_MissileType.MissileID
+            LEFT JOIN FCT_Ship ON TargetType = 1 AND TargetID= FCT_Ship.ShipID
+            LEFT JOIN FCT_Population ON TargetType IN (4, 16) AND TargetID = PopulationID
+            JOIN FCT_missile on FCT_MissileSalvo.MissileSalvoID = FCT_missile.SalvoID
+            WHERE FCT_MissileSalvo.GameID = ? AND FCT_MissileSalvo.RaceID = ? AND FCT_MissileSalvo.SystemID = ?
+            GROUP BY FCT_MissileSalvo.MissileSalvoID""", (gameID, raceID, systemID))]
+        print(f"Loading complete. Loaded {len(list_system_objects)} objects in {round(time.time() - start_time, 2)} seconds")
+        print(list_system_objects[-1])
+        return list_system_objects
