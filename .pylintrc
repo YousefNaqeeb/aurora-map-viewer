@@ -1,0 +1,10 @@
+[MESSAGES CONTROL]
+disable=missing-docstring,line-too-long
+
+[FORMAT]
+max-line-length=120
+
+[DESIGN]
+max-locals=30
+max-branches=20
+max-statements=70
