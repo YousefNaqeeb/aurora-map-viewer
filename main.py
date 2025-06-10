@@ -29,20 +29,20 @@ while True:
         print("here is a list of all objects in the selected system")
         for index, value in enumerate(list_system_objects, start=1):
             print(f"{index}, {value}")
-            exit_loop = False
+            EXIT_LOOP = False
             if index % 15 == 0 and index > 0:
-                while True: 
+                while True:
                     try:
                         User_input =int(input("1, continue, 2, stop viewing list."))
                         if User_input ==1:
                             break
                         elif User_input == 2:
-                            exit_loop = True
+                            EXIT_LOOP = True
                             break
                         else:
                             print("Invalid option.")
                     except Exception as e:
                         print("Invalid data")
-            if exit_loop:
+            if EXIT_LOOP:
                 break
 sql.close()

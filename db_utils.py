@@ -11,8 +11,23 @@ class SQLClass:
         self.connect()
     def connect(self):
         try:
+            print("Establishing connection.")
             self.connection = sqlite3.connect("auroraDB.db")
             self.cursor = self.connection.cursor()
+            self.cursor.executescript("""
+CREATE INDEX IF NOT EXISTS idx_mod_systembody_lookup ON FCT_SystemBody (GameID, SystemID, Name);
+CREATE INDEX IF NOT EXISTS idx_mod_population_lookup ON FCT_Population (RaceID, SystemID, GameID, PopName);
+CREATE INDEX IF NOT EXISTS idx_mod_population_player_colonies ON FCT_Population (GameID, RaceID, SystemID);
+CREATE INDEX IF NOT EXISTS idx_mod_alienpop_lookup ON FCT_AlienPopulation (GameID, ViewingRaceID);
+CREATE INDEX IF NOT EXISTS idx_mod_jumppoint_survey ON FCT_RaceJumpPointSurvey (RaceID, WarpPointID);
+CREATE INDEX IF NOT EXISTS idx_mod_jumppoint_lookup ON FCT_JumpPoint (GameID, SystemID);
+CREATE INDEX IF NOT EXISTS idx_mod_fleet_lookup ON FCT_Fleet (GameID, SystemID, RaceID);
+CREATE INDEX IF NOT EXISTS idx_mod_ship_fleet_lookup ON FCT_Ship (FleetID);
+CREATE INDEX IF NOT EXISTS idx_mod_shipclass_pk_lookup ON FCT_ShipClass (ShipClassID);
+CREATE INDEX IF NOT EXISTS idx_mod_wrecks_lookup ON FCT_Wrecks (GameID, SystemID);
+CREATE INDEX IF NOT EXISTS idx_mod_lifepods_lookup ON FCT_Lifepods (GameID, SystemID);
+CREATE INDEX IF NOT EXISTS idx_mod_missilesalvo_lookup ON FCT_MissileSalvo (GameID, RaceID, SystemID);""")
+            print("Connection established.")
         except Exception as e:
             print(f"Database connection error: {str(e)}")
 # Helper function to     SQL queries with optional parameters
@@ -20,9 +35,24 @@ class SQLClass:
         self.cursor.execute(query, variables)
         return self.cursor.fetchall()
     def close(self):
+        #close connection and drop indexes
+        self.cursor.executescript("""
+                                  DROP INDEX IF EXISTS idx_mod_systembody_lookup;
+DROP INDEX IF EXISTS idx_mod_population_lookup;
+DROP INDEX IF EXISTS idx_mod_population_player_colonies;
+DROP INDEX IF EXISTS idx_mod_alienpop_lookup;
+DROP INDEX IF EXISTS idx_mod_jumppoint_survey;
+DROP INDEX IF EXISTS idx_mod_jumppoint_lookup;
+DROP INDEX IF EXISTS idx_mod_fleet_lookup;
+DROP INDEX IF EXISTS idx_mod_ship_fleet_lookup;
+DROP INDEX IF EXISTS idx_mod_shipclass_pk_lookup;
+DROP INDEX IF EXISTS idx_mod_wrecks_lookup;
+DROP INDEX IF EXISTS idx_mod_lifepods_lookup;
+DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
         self.connection.close()
         self.connection = None
         self.cursor = None
+        print("Connection closed.")
     # Function to get game ID by name or from a list
     def get_game_id(self):
         while True:
@@ -178,21 +208,12 @@ class SQLClass:
             except (ValueError, IndexError): #to handle fleets with no ships
                 list_system_objects.append(PlayerFleet(row[1], row[3], row[4], "", 0, 0, 0, "no ships in fleet"))
         #load player missiles
-        list_system_objects +=[PlayerMissileSalvo(f"Missile Salvo of {row[6]} missiles", row[3], row[4], "", row[5], row[8], row[7]) for row in self.execute("""SELECT MissileSalvoID, TargetType, TargetID, xcor, ycor, MissileSpeed, Name,
+        list_system_objects +=[PlayerMissileSalvo(f"Missile Salvo of {row[6]} missiles", row[3], row[4], "", row[5], row[7]) for row in self.execute("""SELECT MissileSalvoID, TargetType, TargetID, xcor, ycor, MissileSpeed, Name,
                                     COUNT(FCT_Missile.SalvoID) as MissileCount,
-                CASE
-                    WHEN TargetType = 1 THEN FCT_Ship.ShipName
-                    WHEN TargetType = 4 THEN PopName
-                    WHEN TargetType = 16 THEN 'shipyards in orbit of ' || PopName
-                    
-                END as TargetName
             FROM FCT_MissileSalvo
             JOIN FCT_MissileType ON FCT_MissileSalvo.MissileID = FCT_MissileType.MissileID
-            LEFT JOIN FCT_Ship ON TargetType = 1 AND TargetID= FCT_Ship.ShipID
-            LEFT JOIN FCT_Population ON TargetType IN (4, 16) AND TargetID = PopulationID
             JOIN FCT_missile on FCT_MissileSalvo.MissileSalvoID = FCT_missile.SalvoID
             WHERE FCT_MissileSalvo.GameID = ? AND FCT_MissileSalvo.RaceID = ? AND FCT_MissileSalvo.SystemID = ?
             GROUP BY FCT_MissileSalvo.MissileSalvoID""", (game_id, race_id, system_id))]
         print(f"Loading complete. Loaded {len(list_system_objects)} objects in {round(time.time() - start_time, 2)} seconds")
-        print(list_system_objects[-1])
         return list_system_objects

@@ -30,8 +30,7 @@ class BaseDetectableObject(BaseSystemObject):
         # String representation including EM and thermal signatures
         if self.miscellaneous_data == "":
             return f"{self.name} EM signature: {self.em} thermal signature: {self.th}position: {self.x}, {self.y}."
-        else:
-            return f"{self.name} EM signature: {self.em} thermal signature: {self.th} position: {self.x}, {self.y} {self.miscellaneous_data}."
+        return f"{self.name} EM signature: {self.em} thermal signature: {self.th} position: {self.x}, {self.y} {self.miscellaneous_data}."
 
 # Class for player populations with detection strength and population size
 @dataclass
@@ -60,10 +59,9 @@ class NonPlayerFleet(BaseDetectableObject):
 @dataclass
 class PlayerMissileSalvo(BaseSystemObject):
     speed: int
-    target: str
     num_missiles: int
     def __str__(self):
-        return f"{self.name}, with {self.num_missiles} missiles, targeting {self.target}, at position: {self.x}, {self.y}"
+        return f"{self.name}, with {self.num_missiles} missiles, speed {self.speed}KM/s at position: {self.x}, {self.y}"
 @dataclass
 class NonPlayerMissileSalvo(PlayerMissileSalvo):
     em: int
