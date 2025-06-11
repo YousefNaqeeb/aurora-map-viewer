@@ -1,7 +1,7 @@
 import sqlite3
 from math import ceil
 import time
-from models import BaseSystemObject, BaseDetectableObject, PlayerPop, PlayerFleet, PlayerMissileSalvo
+from models import BaseSystemObject, BaseDetectableObject, PlayerPop, PlayerFleet, PlayerMissileSalvo, NonPlayerFleet
 class SQLClass:
     # class to manage connections and queries also get data from db.
     def __init__(self):
@@ -16,7 +16,6 @@ class SQLClass:
             self.cursor = self.connection.cursor()
             self.cursor.executescript("""
 CREATE INDEX IF NOT EXISTS idx_mod_systembody_lookup ON FCT_SystemBody (GameID, SystemID, Name);
-CREATE INDEX IF NOT EXISTS idx_mod_population_lookup ON FCT_Population (RaceID, SystemID, GameID, PopName);
 CREATE INDEX IF NOT EXISTS idx_mod_population_player_colonies ON FCT_Population (GameID, RaceID, SystemID);
 CREATE INDEX IF NOT EXISTS idx_mod_alienpop_lookup ON FCT_AlienPopulation (GameID, ViewingRaceID);
 CREATE INDEX IF NOT EXISTS idx_mod_jumppoint_survey ON FCT_RaceJumpPointSurvey (RaceID, WarpPointID);
@@ -26,7 +25,7 @@ CREATE INDEX IF NOT EXISTS idx_mod_ship_fleet_lookup ON FCT_Ship (FleetID);
 CREATE INDEX IF NOT EXISTS idx_mod_shipclass_pk_lookup ON FCT_ShipClass (ShipClassID);
 CREATE INDEX IF NOT EXISTS idx_mod_wrecks_lookup ON FCT_Wrecks (GameID, SystemID);
 CREATE INDEX IF NOT EXISTS idx_mod_lifepods_lookup ON FCT_Lifepods (GameID, SystemID);
-CREATE INDEX IF NOT EXISTS idx_mod_missilesalvo_lookup ON FCT_MissileSalvo (GameID, RaceID, SystemID);""")
+CREATE INDEX IF NOT EXISTS idx_mod_missilesalvo_lookup ON FCT_MissileSalvo (GameID, SystemID);""")
             print("Connection established.")
         except Exception as e:
             print(f"Database connection error: {str(e)}")
@@ -38,7 +37,6 @@ CREATE INDEX IF NOT EXISTS idx_mod_missilesalvo_lookup ON FCT_MissileSalvo (Game
         #close connection and drop indexes
         self.cursor.executescript("""
                                   DROP INDEX IF EXISTS idx_mod_systembody_lookup;
-DROP INDEX IF EXISTS idx_mod_population_lookup;
 DROP INDEX IF EXISTS idx_mod_population_player_colonies;
 DROP INDEX IF EXISTS idx_mod_alienpop_lookup;
 DROP INDEX IF EXISTS idx_mod_jumppoint_survey;
@@ -209,11 +207,19 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
                 list_system_objects.append(PlayerFleet(row[1], row[3], row[4], "", 0, 0, 0, "no ships in fleet"))
         #load player missiles
         list_system_objects +=[PlayerMissileSalvo(f"Missile Salvo of {row[6]} missiles", row[3], row[4], "", row[5], row[7]) for row in self.execute("""SELECT MissileSalvoID, TargetType, TargetID, xcor, ycor, MissileSpeed, Name,
-                                    COUNT(FCT_Missile.SalvoID) as MissileCount,
+                                    COUNT(FCT_Missile.SalvoID) as MissileCount
             FROM FCT_MissileSalvo
             JOIN FCT_MissileType ON FCT_MissileSalvo.MissileID = FCT_MissileType.MissileID
             JOIN FCT_missile on FCT_MissileSalvo.MissileSalvoID = FCT_missile.SalvoID
             WHERE FCT_MissileSalvo.GameID = ? AND FCT_MissileSalvo.RaceID = ? AND FCT_MissileSalvo.SystemID = ?
             GROUP BY FCT_MissileSalvo.MissileSalvoID""", (game_id, race_id, system_id))]
+        #load non player fleets
+        list_system_objects +=[NonPlayerFleet("", row[0], row[1], "", row[2], row[-1]) for row in self.execute("""SELECT FCT_Fleet.Xcor, FCT_Fleet.Ycor, FCT_Fleet.speed, FCT_Fleet.FleetID,
+        GROUP_CONCAT(ShipID) as ShipIDs,
+        GROUP_CONCAT(ContactName, ', ') as ShipNames
+        FROM FCT_Fleet
+        JOIN FCT_Ship ON FCT_Fleet.FleetID = FCT_Ship.FleetID
+        JOIN FCT_Contacts on ContactID = ShipID
+        WHERE ContactMethod <> 3 AND DetectRaceID = ? AND FCT_Fleet.GameID = ? AND FCT_Fleet.SystemID = ?""", (race_id, game_id, system_id))]
         print(f"Loading complete. Loaded {len(list_system_objects)} objects in {round(time.time() - start_time, 2)} seconds")
         return list_system_objects
