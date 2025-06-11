@@ -52,14 +52,15 @@ class PlayerFleet(BaseSystemObject):
         return f"Fleet {self.name} with ships {self.ships}, at speed {self.speed}, position: {self.x}, {self.y}."
 
 @dataclass
-class NonPlayerFleet(BaseDetectableObject):
+class NonPlayerFleet(BaseSystemObject):
     speed: int
-    ship_sizes: list #size in tons for checking if can see with active sensors
-
+    ships: str
+    def __str__(self):
+        return f"NPR fleet with ships {self.ships}, at a speed of {self.speed}KM/s, at position: {self.x}, {self.y}"
 @dataclass
 class PlayerMissileSalvo(BaseSystemObject):
     speed: int
-    num_missiles: int
+    num_missiles: int #aont of missiles i the salvo
     def __str__(self):
         return f"{self.name}, with {self.num_missiles} missiles, speed {self.speed}KM/s at position: {self.x}, {self.y}"
 @dataclass
