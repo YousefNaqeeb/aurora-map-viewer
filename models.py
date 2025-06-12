@@ -58,13 +58,8 @@ class NonPlayerFleet(BaseSystemObject):
     def __str__(self):
         return f"NPR fleet with ships {self.ships}, at a speed of {self.speed}KM/s, at position: {self.x}, {self.y}"
 @dataclass
-class PlayerMissileSalvo(BaseSystemObject):
+class MissileSalvo(BaseSystemObject):
     speed: int
     num_missiles: int #aont of missiles i the salvo
     def __str__(self):
         return f"{self.name}, with {self.num_missiles} missiles, speed {self.speed}KM/s at position: {self.x}, {self.y}"
-@dataclass
-class NonPlayerMissileSalvo(PlayerMissileSalvo):
-    em: int
-    th: int
-    missile_size: int

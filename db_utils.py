@@ -1,7 +1,7 @@
 import sqlite3
 from math import ceil
 import time
-from models import BaseSystemObject, BaseDetectableObject, PlayerPop, PlayerFleet, PlayerMissileSalvo, NonPlayerFleet
+from models import BaseSystemObject, BaseDetectableObject, PlayerPop, PlayerFleet, MissileSalvo, NonPlayerFleet
 class SQLClass:
     # class to manage connections and queries also get data from db.
     def __init__(self):
@@ -206,7 +206,7 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
             except (ValueError, IndexError): #to handle fleets with no ships
                 list_system_objects.append(PlayerFleet(row[1], row[3], row[4], "", 0, 0, 0, "no ships in fleet"))
         #load player missiles
-        list_system_objects +=[PlayerMissileSalvo(f"Missile Salvo of {row[6]} missiles", row[3], row[4], "", row[5], row[7]) for row in self.execute("""SELECT MissileSalvoID, TargetType, TargetID, xcor, ycor, MissileSpeed, Name,
+        list_system_objects +=[MissileSalvo(f"Missile Salvo of {row[6]} missiles", row[3], row[4], "", row[5], row[7]) for row in self.execute("""SELECT MissileSalvoID, TargetType, TargetID, xcor, ycor, MissileSpeed, Name,
                                     COUNT(FCT_Missile.SalvoID) as MissileCount
             FROM FCT_MissileSalvo
             JOIN FCT_MissileType ON FCT_MissileSalvo.MissileID = FCT_MissileType.MissileID
@@ -220,6 +220,18 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
         FROM FCT_Fleet
         JOIN FCT_Ship ON FCT_Fleet.FleetID = FCT_Ship.FleetID
         JOIN FCT_Contacts on ContactID = ShipID
-        WHERE ContactMethod <> 3 AND DetectRaceID = ? AND FCT_Fleet.GameID = ? AND FCT_Fleet.SystemID = ?""", (race_id, game_id, system_id))]
+        WHERE ContactMethod <> 3 AND DetectRaceID = ? AND FCT_Fleet.GameID = ? AND FCT_Fleet.SystemID = ?
+        GROUP BY FCT_Fleet.FleetID""", (race_id, game_id, system_id))]
+        #load NPR missile salvos
+        list_system_objects +=[MissileSalvo(f"NPR Missile Salvo of {row[6]} missiles", row[3], row[4], "", row[5], row[7]) for row in self.execute("""SELECT MissileSalvoID, TargetType, TargetID, FCT_MissileSalvo.xcor, FCT_MissileSalvo.ycor, MissileSpeed, Name,
+                                    COUNT(FCT_Missile.SalvoID) as MissileCount
+            FROM FCT_MissileSalvo
+            JOIN FCT_MissileType ON FCT_MissileSalvo.MissileID = FCT_MissileType.MissileID
+            JOIN FCT_missile on FCT_MissileSalvo.MissileSalvoID = FCT_missile.SalvoID
+            JOIN FCT_Contacts ON FCT_MissileSalvo.MissileSalvoID = ContactID
+            WHERE ContactType = 3 AND FCT_MissileSalvo.GameID = ? AND FCT_MissileSalvo.SystemID = ?
+            GROUP BY FCT_MissileSalvo.MissileSalvoID""", (game_id, system_id))]
+        #load weapon impact contacts, nuclear and energy weapons
+        list_system_objects +=[BaseSystemObject(row[0], row[1], row[2], "") for row in self.execute("SELECT ContactName, xcor, ycor FROM FCT_Contacts WHERE ContactType IN (17, 18) AND GameID = ? AND DetectRaceID = ? AND SystemID = ?", (game_id, race_id, system_id))]
         print(f"Loading complete. Loaded {len(list_system_objects)} objects in {round(time.time() - start_time, 2)} seconds")
         return list_system_objects
