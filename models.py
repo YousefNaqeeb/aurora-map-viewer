@@ -7,6 +7,7 @@ class BaseSystemObject:
     x: float           # X coordinate
     y: float           # Y coordinate
     miscellaneous_data: str  # Additional information
+    object_type: str #contains exactly what an object is, for example, lifepod, missile salvo for filtering.
     def __post_init__(self):
         #makes sure all fields are correct
         if type(self.x) == float:
@@ -23,7 +24,7 @@ class BaseSystemObject:
         return iter((self.x, self.y))
 # Class for objects with electromagnetic and thermal signatures
 @dataclass
-class BaseDetectableObject(BaseSystemObject):
+class NPRPop(BaseSystemObject):
     em: int ## Electromagnetic signature
     th: int # Thermal signature
     def __str__(self):
