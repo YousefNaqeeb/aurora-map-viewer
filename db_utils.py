@@ -204,7 +204,7 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
                 th = max(item[1] for item in sensor_data)
                 list_system_objects.append(PlayerFleet(row[1], row[3], row[4], "", "fleet", row[2], em, th, f"{', '.join(ships)}"))
             except (ValueError, IndexError): #to handle fleets with no ships
-                list_system_objects.append(PlayerFleet(row[1], row[3], row[4], "", 0, 0, 0, "no ships in fleet"))
+                list_system_objects.append(PlayerFleet(row[1], row[3], row[4], "", "fleet", 0, 0, 0, "no ships in fleet"))
         #load player missiles
         list_system_objects +=[MissileSalvo(f"Missile Salvo of {row[6]} missiles", row[3], row[4], "", "missile salvo", row[5], row[7]) for row in self.execute("""SELECT MissileSalvoID, TargetType, TargetID, xcor, ycor, MissileSpeed, Name,
                                     COUNT(FCT_Missile.SalvoID) as MissileCount
