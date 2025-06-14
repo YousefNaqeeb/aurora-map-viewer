@@ -1,17 +1,22 @@
 import sqlite3
 from math import ceil
-import time
+from pathlib import Path
 from models import BaseSystemObject, NPRPop, PlayerPop, PlayerFleet, MissileSalvo, NonPlayerFleet
+class ConnectionFaildError(Exception):
+    """error for if the programme attempts to connect to AuroraDB.db wen it is not there"""
+    pass
 class SQLClass:
-    # class to manage connections and queries also get data from db.
+    """class to manage connections and queries also get data from db"""
     def __init__(self):
-        #connects to auroraDB.db as soon as it is instantiated
+        """connects to auroraDB.db as soon as it is instantiated"""
         self.connection = None
         self.cursor = None
-        self.connect()
     def connect(self):
+        """attempts to connect to the db and add indexes. if it can do so, it will return that the connection was established and true , oelse, it will return an error and false."""
         try:
-            print("Establishing connection.")
+            db_path = Path("auroraDB.db")
+            if not db_path.exists():
+                raise ConnectionFaildError("Could not find the file auroraDB.db. Make sure it is in the same directory.")
             self.connection = sqlite3.connect("auroraDB.db")
             self.cursor = self.connection.cursor()
             self.cursor.executescript("""
@@ -26,9 +31,9 @@ CREATE INDEX IF NOT EXISTS idx_mod_shipclass_pk_lookup ON FCT_ShipClass (ShipCla
 CREATE INDEX IF NOT EXISTS idx_mod_wrecks_lookup ON FCT_Wrecks (GameID, SystemID);
 CREATE INDEX IF NOT EXISTS idx_mod_lifepods_lookup ON FCT_Lifepods (GameID, SystemID);
 CREATE INDEX IF NOT EXISTS idx_mod_missilesalvo_lookup ON FCT_MissileSalvo (GameID, SystemID);""")
-            print("Connection established.")
+            return ("Connection established.", True)
         except Exception as e:
-            print(f"Database connection error: {str(e)}")
+            return (f"{e}", False)
 # Helper function to     SQL queries with optional parameters
     def execute(self, query, variables = ()):
         self.cursor.execute(query, variables)
@@ -50,79 +55,20 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
         self.connection.close()
         self.connection = None
         self.cursor = None
-        print("Connection closed.")
-    # Function to get game ID by name or from a list
-    def get_game_id(self):
-        while True:
-            game_name =input("Enter game name to load, or leave blank to see list of games.")
-            if not game_name:
-                #Display list of available games
-                games =self.execute("SELECT GameName FROM FCT_Game")
-                for index, value in enumerate(games, start=1):
-                    print(f"{index}. {value}")
-                try:
-                    # Get selected game ID by index
-                    game_id =self.execute("SELECT GameID from FCT_Game WHERE GameName = ?", (games[int(input("enter the number of the game you would like to select.")) - 1][0],))
-                    return int(game_id[0][0])
-                except Exception:
-                    print("Invalid option.")
-            else:
-                # Get game ID directly by name
-                game_id = self.execute("SELECT GameID from FCT_Game WHERE GameName = ?", (game_name,))
-                if not game_id:
-                    print("game not found. try again.")
-                else:
-                    return int(game_id[0][0])
 
-    # Function to get player race ID
-    def get_race(self, game_id):
-        # Get player races (non-NPR) for the game
-        race_info =  self.execute("SELECT RaceID, RaceTitle FROM FCT_Race WHERE NPR = 0 AND GameID = ?", (game_id,))
-        if len(race_info) == 1:
-            # If only one race, select it automatically
-            return race_info[0][0]
-        # Display list of races if multiple are available
-        print("you can pick from the following options.")
-        for index, value in enumerate(race_info, start=1):
-            print(f"{index}, {value[1]}")
-        # Get user selection
-        while True:
-            try:
-                return race_info[int(input("enter the number of the race you would like to view.")) -1][0]
-            except Exception:
-                print("invalid option")
+    def get_games(self):
+        """this function returns a list of all games with IDs in the db"""
+        return self.execute("SELECT GameID, GameName FROM FCT_Game")
 
+    def get_player_races(self, game_id):
+        """gets a list of tuples containing all non npr races and there IDs"""
+        return self.execute("SELECT RaceID, RaceTitle FROM FCT_Race WHERE NPR = 0 AND GameID = ?", (game_id,))
     # Function to load all system objects for the specified system
-    # This is the main data retrieval function that populates the list of objects in a star system
-    def get_system_data(self, system_name, race_id, game_id):
-        while True:
-            if not system_name == "":
-                try:
-                    # Attempt to get system ID by name if a specific system was requested
-                    # FCT_RaceSysSurvey table contains systems that have been discovered by each race
-                    system_id = self.execute("SELECT SystemID FROM FCT_RaceSysSurvey  WHERE name = ? AND raceID = ?", (system_name, race_id))[0][0]
-                    break
-                except Exception:
-                    system_name =input("System not found. try again, or leave blank to view possible systems.")
-            else:
-                # If no system name provided, display list of all systems discovered by this race
-                list_system_ids = self.execute("SELECT name, SystemID FROM FCT_RaceSysSurvey  WHERE raceID = ? AND GameID = ?", (race_id, game_id))
-                print("You can select one of the following systems.")
-                for index, value in enumerate(list_system_ids, start=1):
-                    print(f"{index}, {value[0]}")
-                # Get user selection from the displayed list
-                while True:
-                    try:
-                        num =int(input("Enter the number for the system you would like to select.")) -1
-                        system_name = list_system_ids[num][0]
-                        system_id = list_system_ids[num][1]
-                        break
-                    except (ValueError, IndexError):
-                        print("invalid option")
-        # System found, begin loading all objects
-        print(f"Loading system {system_name}")
-        start_time = time.time()
-        #Start loadin lifepods in system
+    def get_systems(self, game_id, race_id):
+        """this function gets a list of all systems that a race has detected in the current game."""
+        return self.execute("SELECT SystemID, Name FROM FCT_RaceSysSurvey  WHERE raceID = ? AND GameID = ?", (race_id, game_id))
+    def get_system_data(self, game_id, race_id, system_name, system_id):
+        #Start loading lifepods in system
         self.cursor.execute("SELECT Xcor, Ycor, ShipName, Crew FROM FCT_Lifepods WHERE GameID = ? AND SystemID = ?", (game_id, system_id))
         list_system_objects = [BaseSystemObject(f"lifepod from {row[2]}", row[0], row[1], f"the lifepod has {row[3]} survivers on board", "lifepod") for row in self.cursor.fetchall()]
         # Load mass driver packets and their contents
@@ -233,5 +179,4 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
             GROUP BY FCT_MissileSalvo.MissileSalvoID""", (game_id, system_id))]
         #load weapon impact contacts, nuclear and energy weapons
         list_system_objects +=[BaseSystemObject(row[0], row[1], row[2], "", "weapon contact") for row in self.execute("SELECT ContactName, xcor, ycor FROM FCT_Contacts WHERE ContactType IN (17, 18) AND GameID = ? AND DetectRaceID = ? AND SystemID = ?", (game_id, race_id, system_id))]
-        print(f"Loading complete. Loaded {len(list_system_objects)} objects in {round(time.time() - start_time, 2)} seconds")
         return list_system_objects
