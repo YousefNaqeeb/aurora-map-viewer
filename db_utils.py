@@ -4,7 +4,6 @@ from pathlib import Path
 from models import BaseSystemObject, NPRPop, PlayerPop, PlayerFleet, MissileSalvo, NonPlayerFleet
 class ConnectionFaildError(Exception):
     """error for if the programme attempts to connect to AuroraDB.db wen it is not there"""
-    pass
 class SQLClass:
     """class to manage connections and queries also get data from db"""
     def __init__(self):

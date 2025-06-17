@@ -11,8 +11,8 @@ class AppControler:
     def load_starting_data(self, game_id, race_id, system_id, system_name):
         """fully loads all game data and stores IDs"""
         self.game_id = game_id
-        self.Change_race(race_id, system_id, system_name)
-    def Change_race(self, race_id, system_id, system_name):
+        self.change_race(race_id, system_id, system_name)
+    def change_race(self, race_id, system_id, system_name):
         """updates race and system information"""
         self.race_id = race_id
         self.change_system(system_id, system_name)

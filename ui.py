@@ -49,6 +49,7 @@ class UI:
             except (ValueError, TypeError, IndexError):
                 self.show_message("You must enter a valid number.")
     def display_list_system_objects(self, view_list):
+        """this fuction manages displaying the list of system object, currently, it is paged, with 20 items on each page."""
         page = 0
         page_start = page * 20
         page_end = page_start + 20
@@ -61,20 +62,20 @@ class UI:
                 while True:
                     try:
                         choice = int(self.prompt_for_input("1, go back, 2, continue, 3, return to main menu"))
-                        if choice == 1 and page == 0:
+                        if choice == 1 and page == 0: #to make sure the user doesn't end up on a negative page
                             self.show_message("You can't go back at this time.")
-                        elif choice == 1:
+                        elif choice == 1: #go back one page
                             page -= 1
                             index -= 20
                             break
-                        elif choice == 2 and index == len(view_list):
+                        elif choice == 2 and index == len(view_list): #to stop the index from being greater than the amount of elements in the list.
                             self.show_message("You can't continue at this time.")
-                        elif choice == 2:
+                        elif choice == 2: #next page
                             page += 1
                             break
                         elif choice == 3:
-                            return None
+                            return
                         else:
                             self.show_message("invalid option")
                     except ValueError:
-                            self.show_message("You must enter valid data.")
+                        self.show_message("You must enter valid data.")
