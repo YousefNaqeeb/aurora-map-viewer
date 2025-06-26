@@ -79,10 +79,10 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
             list_indexes =[i for i in range(13, 24) if row[i] > 0]
             list_minerals =["Duranium", "Neutronium", "Corbomite", "Tritanium", "Boronide", "Mercassium", "Vendarite", "Sorium", "Uridium", "Corundium", "Gallicite"]
             packet_contents =[f"{list_minerals[i -13]}: {ceil(row[i])} tons" for i in list_indexes ]
-            list_system_objects +=BaseSystemObject(f"mass driver packet destination {row[-1]}", row[7], row[8], f"the packet contains {', '.join(packet_contents)}", "mass driver packet")
-            #load grav servay locations
+            list_system_objects +=BaseSystemObject(f"mass driver packet destination {row[-1]}", row[7], row[8], f"the packet contains {', '.join(packet_contents)}", "mass_driver_packet")
+            #load grav survey locations
         self.cursor.execute("SELECT * FROM  FCT_SurveyLocation WHERE GameID = ? AND SystemID = ?", (game_id, system_id))
-        list_system_objects +=[BaseSystemObject(f"Servay Point {row[3]}", row[4], row[-1], "", "grav servay location") for row in self.cursor.fetchall()]
+        list_system_objects +=[BaseSystemObject(f"survey Point {row[3]}", row[4], row[-1], "", "grav_survey_location") for row in self.cursor.fetchall()]
         #load discovered jumppoints
         self.cursor.execute("""SELECT FCT_JumpPoint.WPLink, Xcor, Ycor, Explored FROM FCT_JumpPoint
     JOIN FCT_RaceJumpPointSurvey ON FCT_JumpPoint.WarpPointID = FCT_RaceJumpPointSurvey.WarpPointID
@@ -114,7 +114,7 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
                 list_system_objects.append(BaseSystemObject(f"{system_name} {row[3]}", row[1], row[2], "", "body"))
             else:
                 #this handles moons
-                list_system_objects.append(BaseSystemObject(f"{system_name} {row[3]} moon {row[4]}", row[1], row[2], "body"))
+                list_system_objects.append(BaseSystemObject(f"{system_name} {row[3]} moon {row[4]}", row[1], row[2], "", "body"))
         # Load colonized bodies not belonging to the player race
         self.cursor.execute("""SELECT EMSignature, ThermalSignature, PopulationName, xcor, ycor FROM FCT_AlienPopulation
                     JOIN FCT_systemBody ON FCT_Population.SystemBodyID = FCT_systemBody .SystemBodyID
@@ -151,7 +151,7 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
             except (ValueError, IndexError): #to handle fleets with no ships
                 list_system_objects.append(PlayerFleet(row[1], row[3], row[4], "", "fleet", 0, 0, 0, "no ships in fleet"))
         #load player missiles
-        list_system_objects +=[MissileSalvo(f"Missile Salvo of {row[6]} missiles", row[3], row[4], "", "missile salvo", row[5], row[7]) for row in self.execute("""SELECT MissileSalvoID, TargetType, TargetID, xcor, ycor, MissileSpeed, Name,
+        list_system_objects +=[MissileSalvo(f"Missile Salvo of {row[6]} missiles", row[3], row[4], "", "missile_salvo", row[5], row[7]) for row in self.execute("""SELECT MissileSalvoID, TargetType, TargetID, xcor, ycor, MissileSpeed, Name,
                                     COUNT(FCT_Missile.SalvoID) as MissileCount
             FROM FCT_MissileSalvo
             JOIN FCT_MissileType ON FCT_MissileSalvo.MissileID = FCT_MissileType.MissileID
@@ -168,7 +168,7 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
         WHERE ContactMethod <> 3 AND DetectRaceID = ? AND FCT_Fleet.GameID = ? AND FCT_Fleet.SystemID = ?
         GROUP BY FCT_Fleet.FleetID""", (race_id, game_id, system_id))]
         #load NPR missile salvos
-        list_system_objects +=[MissileSalvo(f"NPR Missile Salvo of {row[6]} missiles", row[3], row[4], "", "missile salvo", row[5], row[7]) for row in self.execute("""SELECT MissileSalvoID, TargetType, TargetID, FCT_MissileSalvo.xcor, FCT_MissileSalvo.ycor, MissileSpeed, Name,
+        list_system_objects +=[MissileSalvo(f"NPR Missile Salvo of {row[6]} missiles", row[3], row[4], "", "missile_salvo", row[5], row[7]) for row in self.execute("""SELECT MissileSalvoID, TargetType, TargetID, FCT_MissileSalvo.xcor, FCT_MissileSalvo.ycor, MissileSpeed, Name,
                                     COUNT(FCT_Missile.SalvoID) as MissileCount
             FROM FCT_MissileSalvo
             JOIN FCT_MissileType ON FCT_MissileSalvo.MissileID = FCT_MissileType.MissileID
@@ -177,5 +177,5 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
             WHERE ContactType = 3 AND FCT_MissileSalvo.GameID = ? AND FCT_MissileSalvo.SystemID = ?
             GROUP BY FCT_MissileSalvo.MissileSalvoID""", (game_id, system_id))]
         #load weapon impact contacts, nuclear and energy weapons
-        list_system_objects +=[BaseSystemObject(row[0], row[1], row[2], "", "weapon contact") for row in self.execute("SELECT ContactName, xcor, ycor FROM FCT_Contacts WHERE ContactType IN (17, 18) AND GameID = ? AND DetectRaceID = ? AND SystemID = ?", (game_id, race_id, system_id))]
+        list_system_objects +=[BaseSystemObject(row[0], row[1], row[2], "", "weapon_contact") for row in self.execute("SELECT ContactName, xcor, ycor FROM FCT_Contacts WHERE ContactType IN (17, 18) AND GameID = ? AND DetectRaceID = ? AND SystemID = ?", (game_id, race_id, system_id))]
         return list_system_objects

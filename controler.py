@@ -1,7 +1,8 @@
 class AppControler:
     """Manages state of variables, will contain more app logic such as search. does not handle UI"""
-    def __init__(self, db_handler):
+    def __init__(self, db_handler, settings_manager):
         self.db = db_handler
+        self.settings_manager = settings_manager
         self.game_id = None
         self.race_id = None
         self.system_id = None
@@ -22,3 +23,8 @@ class AppControler:
         self.system_name = system_name
         self.system_objects = self.db.get_system_data(self.game_id, self.race_id, self.system_name, self.system_id)
         self.view_list = self.system_objects
+    def toggle_setting(self, key, value):
+        value = not value
+        self.settings_manager.change_setting(key, value)
+    def apply_filters(self):
+        self.view_list =[i for i in self.system_objects if self.settings_manager.settings[i.object_type]]
