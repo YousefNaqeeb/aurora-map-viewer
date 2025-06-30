@@ -6,7 +6,7 @@ from data_loader import get_starting_data, get_race_data, get_system_data
 from settings import SettingsManager
 
 def main():
-    """main function"""
+    """Main function"""
     #initialise all components
     ui = UI()
     db = SQLClass()
@@ -18,41 +18,59 @@ def main():
         ui.show_message(result[0], True)
         sys.exit()
     settings_manager = SettingsManager()
-    controler = AppControler(db, settings_manager)
+    controller = AppControler(db, settings_manager)
     chosen_game, chosen_race, chosen_system = get_starting_data(db, ui)
     ui.show_message(f"loading system {chosen_system[1]}")
-    controler.load_starting_data(chosen_game, chosen_race, chosen_system[0], chosen_system[1])
-    ui.show_message("Loaded data.")
-    while True: #main loop
+    controller.load_starting_data(chosen_game, chosen_race, chosen_system[0], chosen_system[1])
+    ui.show_message("Data loaded.")
+    while True: # Main loop
         choice = ui.main_menu()
         if choice == "exit":
-            ui.show_message("exiting programme")
+            ui.show_message("Exiting program")
             db.close()
             break
         elif choice == "change game":
             chosen_game, chosen_race, chosen_system = get_starting_data(db, ui)
             ui.show_message(f"loading system {chosen_system[1]}")
-            controler.load_starting_data(chosen_game, chosen_race, chosen_system[0], chosen_system[1])
-            ui.show_message("Loaded data.")
+            controller.load_starting_data(chosen_game, chosen_race, chosen_system[0], chosen_system[1])
+            ui.show_message("Data loaded.")
         elif choice == "change race":
-            chosen_race, chosen_system = get_race_data(db, ui, controler.game_id)
-            controler.change_race(chosen_race, chosen_system[0], chosen_system[1])
-            ui.show_message("data updated")
+            chosen_race, chosen_system = get_race_data(db, ui, controller.game_id)
+            controller.change_race(chosen_race, chosen_system[0], chosen_system[1])
+            ui.show_message("Data updated")
         elif choice == "change system":
-            chosen_system = get_system_data(db, ui, controler.game_id, controler.race_id)
-            controler.change_system(chosen_system[0], chosen_system[1])
+            chosen_system = get_system_data(db, ui, controller.game_id, controller.race_id)
+            controller.change_system(chosen_system[0], chosen_system[1])
             ui.show_message("Data updated.")
         elif choice == "view list":
-            ui.display_list_system_objects(controler.view_list)
+            ui.display_list_system_objects(controller.view_list)
         elif choice == "edit filter settings":
             while True:
                 settings_choice =ui.edit_settings(settings_manager.settings)
                 if settings_choice == "done":
                     break
-                controler.toggle_setting(settings_choice, settings_manager.settings[settings_choice])
+                controller.toggle_setting(settings_choice, settings_manager.settings[settings_choice])
         elif choice == "apply filters":
-            controler.apply_filters()
+            controller.apply_filters()
             ui.show_message("list updated")
+        elif choice == "pin item":
+            results = controller.search_list(ui.prompt_for_input("enter something to search"))
+            if results == []:
+                ui.show_message("Could not find what you were looking for.")
+            else:
+                pinned_object = ui.show_options_and_get_input(results, "Search found following results:")
+                controller.pinned_object = pinned_object
+        elif choice  == "sort list from pinned item":
+            controller.sort_from_object()
+        elif choice == "calculate distance between pinned item and another item":
+            results = controller.search_list(ui.prompt_for_input("enter something to search"))
+            if results == []:
+                ui.show_message("Could not find what you were looking for.")
+            else:
+                item = ui.show_options_and_get_input(results, "Search found following results:")
+                ui.show_message(f"distance {controller.find_distance(item)}")
+        elif choice == "reset list sorting":
+            controller.make_list_default()
         else:
             ui.show_message("Invalid option.")
 if __name__ == "__main__":

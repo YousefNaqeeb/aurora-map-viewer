@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-
+from typing import Any
 # Base class for all game objects with position and description
 @dataclass
 class BaseSystemObject:
@@ -17,8 +17,8 @@ class BaseSystemObject:
     def __str__(self):
         # String representation with or without miscellaneous data
         if self.miscellaneous_data == "":
-            return f"name: {self.name} position: {self.x}, {self.y}."
-        return f"{self.name} position: {self.x}, {self.y} {self.miscellaneous_data}."
+            return f"name: {self.name}"
+        return f"{self.name} {self.miscellaneous_data}."
     def __iter__(self):
         #returns a tuple with position data for checking distance etc
         return iter((self.x, self.y))
@@ -30,8 +30,8 @@ class NPRPop(BaseSystemObject):
     def __str__(self):
         # String representation including EM and thermal signatures
         if self.miscellaneous_data == "":
-            return f"{self.name} EM signature: {self.em} thermal signature: {self.th}position: {self.x}, {self.y}."
-        return f"{self.name} EM signature: {self.em} thermal signature: {self.th} position: {self.x}, {self.y} {self.miscellaneous_data}."
+            return f"{self.name} EM signature: {self.em} thermal signature: {self.th}"
+        return f"{self.name} EM signature: {self.em} thermal signature: {self.th} {self.miscellaneous_data}."
 
 # Class for player populations with detection strength and population size
 @dataclass
@@ -39,7 +39,7 @@ class PlayerPop(BaseSystemObject):
     dsp_strength: int #Deep space tracking station strength
     population: float #Population in millions
     def __str__(self):
-        return f"{self.name} Population: {self.population} million, position: {self.x}, {self.y}."
+        return f"{self.name} Population: {self.population} million"
 
 #class for player fleets
 @dataclass
@@ -50,17 +50,25 @@ class PlayerFleet(BaseSystemObject):
     #detection range = (0.25 * sqrt(Sensor Sensitivity) * sqrt(detected signal strength) * 1000000
     ships: str #list of names of ships in class.
     def __str__(self):
-        return f"Fleet {self.name} with ships {self.ships}, at speed {self.speed}, position: {self.x}, {self.y}."
+        return f"Fleet {self.name} with ships {self.ships}, at speed {self.speed}, "
 
 @dataclass
 class NonPlayerFleet(BaseSystemObject):
     speed: int
     ships: str
     def __str__(self):
-        return f"NPR fleet with ships {self.ships}, at a speed of {self.speed}KM/s, at position: {self.x}, {self.y}"
+        return f"NPR fleet with ships {self.ships}, at a speed of {self.speed}KM/s"
 @dataclass
 class MissileSalvo(BaseSystemObject):
     speed: int
     num_missiles: int #aont of missiles i the salvo
     def __str__(self):
-        return f"{self.name}, with {self.num_missiles} missiles, speed {self.speed}KM/s at position: {self.x}, {self.y}"
+        return f"{self.name}, with {self.num_missiles} missiles, speed {self.speed}KM/s"
+@dataclass
+class ProximityObject:
+    """Gives objects an angle and distance value"""
+    object: Any
+    distance: int
+    angle: int
+    def __str__(self):
+        return f"{self.object} distance, {self.distance}km, angle {self.angle}degrees"

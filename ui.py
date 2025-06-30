@@ -23,16 +23,9 @@ class UI:
             self.show_message("There was only one option, which has been selected for you automaticly.")
             return data[0]
         while True:
-            choice = self.prompt_for_input("Type the name of what you would like to select, or leave blank to view all objects and choose from the list.")
-            if choice == "": #wen the user leaves a blank line, and is taken to the list of options
-                for index, value in enumerate(data, start=1):
-                    self.show_message(f"{index}, {value}")
-                return self.select_from_list(data)
-            else: #if the user types something else
-                for i in data:
-                    if choice == i[1]:
-                        return i
-                    self.show_message("Could not find that option")
+            for index, value in enumerate(data, start=1):
+                self.show_message(f"{index}, {str(value)}")
+            return self.select_from_list(data)
     def main_menu(self):
         """gets user input to return a command to main."""
         options = [
@@ -42,7 +35,11 @@ class UI:
             "change system",
             "view list",
             "edit filter settings",
-            "apply filters"]
+            "apply filters",
+            "pin item",
+            "sort list from pinned item",
+            "calculate distance between pinned item and another item",
+            "reset list sorting"]
         self.show_message("Main menu:")
         for index, value in enumerate(options, start = 1):
             self.show_message(f"{index}, {value}")

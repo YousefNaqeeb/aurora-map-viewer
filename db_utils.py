@@ -56,17 +56,18 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
         self.cursor = None
 
     def get_games(self):
-        """this function returns a list of all games with IDs in the db"""
+        """This function returns a list of all games with IDs in the db"""
         return self.execute("SELECT GameID, GameName FROM FCT_Game")
 
     def get_player_races(self, game_id):
-        """gets a list of tuples containing all non npr races and there IDs"""
+        """Gets a list of tuples containing all non npr races and there IDs"""
         return self.execute("SELECT RaceID, RaceTitle FROM FCT_Race WHERE NPR = 0 AND GameID = ?", (game_id,))
     # Function to load all system objects for the specified system
     def get_systems(self, game_id, race_id):
-        """this function gets a list of all systems that a race has detected in the current game."""
+        """This function gets a list of all systems that a race has detected in the current game."""
         return self.execute("SELECT SystemID, Name FROM FCT_RaceSysSurvey  WHERE raceID = ? AND GameID = ?", (race_id, game_id))
     def get_system_data(self, game_id, race_id, system_name, system_id):
+        """Loads all important data"""
         #Start loading lifepods in system
         self.cursor.execute("SELECT Xcor, Ycor, ShipName, Crew FROM FCT_Lifepods WHERE GameID = ? AND SystemID = ?", (game_id, system_id))
         list_system_objects = [BaseSystemObject(f"lifepod from {row[2]}", row[0], row[1], f"the lifepod has {row[3]} survivers on board", "lifepod") for row in self.cursor.fetchall()]
@@ -178,4 +179,5 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
             GROUP BY FCT_MissileSalvo.MissileSalvoID""", (game_id, system_id))]
         #load weapon impact contacts, nuclear and energy weapons
         list_system_objects +=[BaseSystemObject(row[0], row[1], row[2], "", "weapon_contact") for row in self.execute("SELECT ContactName, xcor, ycor FROM FCT_Contacts WHERE ContactType IN (17, 18) AND GameID = ? AND DetectRaceID = ? AND SystemID = ?", (game_id, race_id, system_id))]
+        list_system_objects.append(BaseSystemObject("central star", 0, 0, "", ""))
         return list_system_objects
