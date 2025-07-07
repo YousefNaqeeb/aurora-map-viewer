@@ -76,6 +76,6 @@ class ProximityObject:
     """Gives objects an angle and distance value"""
     object: Any
     distance: int
-    angle: int
+    bearing: int
     def __str__(self):
-        return f"{self.object} distance, {self.distance}km, angle {self.angle}degrees"
+        return f"{self.object} distance, {self.distance}km, angle {self.bearing}degrees"

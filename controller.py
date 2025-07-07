@@ -57,6 +57,14 @@ class AppControler:
         return results[:20]
     def find_distance(self, other):
         return round(math.dist(self.pinned_object, other))
+    def find_bearing(self, item):
+        """find angle with atan2, then convert it so 0 degrees is north instead of east"""
+        delta_x = item.x - self.pinned_object.x
+        delta_y = item.y - self.pinned_object.y
+        angle_r = math.atan2(delta_y, delta_x)
+        bearing = round(math.degrees(angle_r))
+        bearing = (450 - bearing) % 360 # Rotate the number so 0 is north
+        return bearing
     def sort_from_object(self):
         """Sorts the viewing list by distance, and gives each object an angle from the center point"""
         sorted_list = []
@@ -66,12 +74,8 @@ class AppControler:
             else:
                 item = i
             distance = self.find_distance(item)
-            delta_x = item.x - self.pinned_object.x
-            delta_y = item.y - self.pinned_object.y
-            angle_r = math.atan2(delta_y, delta_x)
-            angle = round(math.degrees(angle_r))
-            angle = (450 - angle) % 360
-            sorted_list.append(ProximityObject(item, distance, angle))
+            bearing = self.find_bearing(item)
+            sorted_list.append(ProximityObject(item, distance, bearing))
         self.view_list = sorted(sorted_list, key=lambda obj: obj.distance)
     def mineral_search(self, search_targets):
         """Find and return list of bodies with the requested minerals amounts and access levels"""
