@@ -22,16 +22,23 @@ class BaseSystemObject:
     def __iter__(self):
         #returns a tuple with position data for checking distance etc
         return iter((self.x, self.y))
-# Class for objects with electromagnetic and thermal signatures
+
+@dataclass
+class BaseBody(BaseSystemObject):
+    minerals: dict
+    def __str__(self):
+        view_minerals =[(mineral, round(data[0]), data[1]) for mineral, data in self.minerals.items() if data[0] > 0]
+        if len(view_minerals) > 0:
+            return f"name: {self.name} minerals {view_minerals}"
+        return f"name: {self.name}"
+# Class for NPR colonies
 @dataclass
 class NPRPop(BaseSystemObject):
     em: int ## Electromagnetic signature
     th: int # Thermal signature
     def __str__(self):
         # String representation including EM and thermal signatures
-        if self.miscellaneous_data == "":
-            return f"{self.name} EM signature: {self.em} thermal signature: {self.th}"
-        return f"{self.name} EM signature: {self.em} thermal signature: {self.th} {self.miscellaneous_data}."
+        return f"{self.name} EM signature: {self.em} thermal signature: {self.th},"
 
 # Class for player populations with detection strength and population size
 @dataclass

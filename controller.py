@@ -27,19 +27,20 @@ class AppControler:
         self.Master_object_list = self.db.get_system_data(self.game_id, self.race_id, self.system_name, self.system_id)
         self.make_list_default()
     def make_list_default(self):
+        self.pinned_object = self.Master_object_list[-1]
         self.view_list = self.Master_object_list
         self.apply_filters()
-        self.pinned_object = self.Master_object_list[-1]
         self.sort_from_object()
     def toggle_setting(self, key, value):
         value = not value
         self.settings_manager.change_setting(key, value)
     def apply_filters(self):
         self.view_list =[i for i in self.Master_object_list if self.settings_manager.settings[i.object_type]]
+        self.sort_from_object()
     def search_list(self, query):
         query = query.lower().split()
         results  = [("placeholder value", 1)]
-        for i in self.view_list:
+        for i in self.Master_object_list:
             item_words = i.name.lower().split()
             score = 0
             for j in query:
@@ -57,12 +58,37 @@ class AppControler:
     def find_distance(self, other):
         return round(math.dist(self.pinned_object, other))
     def sort_from_object(self):
+        """Sorts the viewing list by distance, and gives each object an angle from the center point"""
         sorted_list = []
         for i in self.view_list:
-            distance = self.find_distance(i)
-            delta_x = i.x - self.pinned_object.x
-            delta_y = i.y - self.pinned_object.y
+            if type(i) == ProximityObject:
+                item = i.object
+            else:
+                item = i
+            distance = self.find_distance(item)
+            delta_x = item.x - self.pinned_object.x
+            delta_y = item.y - self.pinned_object.y
             angle_r = math.atan2(delta_y, delta_x)
             angle = round(math.degrees(angle_r))
-            sorted_list.append(ProximityObject(i, distance, angle))
+            angle = (450 - angle) % 360
+            sorted_list.append(ProximityObject(item, distance, angle))
         self.view_list = sorted(sorted_list, key=lambda obj: obj.distance)
+    def mineral_search(self, search_targets):
+        """Find and return list of bodies with the requested minerals amounts and access levels"""
+        results = []
+        list_bodies =[i for i in self.Master_object_list if i.object_type == "body"] # Get rid of stuff that can't have minerals
+        for i in list_bodies:
+            score = 0
+            for j in search_targets:
+                mineral, amount, access = j
+                object_amount, object_access = i.minerals[mineral]
+                if object_amount >= int(amount) and object_access >= float(access):
+                    score += object_amount
+                    continue
+                else:
+                    break
+            else:
+                results.append((score, i))
+        sorted_results =sorted(results, reverse=True)
+        results=[i[1] for i in sorted_results]
+        return results

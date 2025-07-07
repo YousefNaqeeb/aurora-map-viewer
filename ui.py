@@ -16,6 +16,10 @@ class UI:
             except (ValueError, TypeError, IndexError):
                 self.show_message("You must enter a valid number.")
                 continue
+    def show_multiple_elements(self, data):
+        for index, value in enumerate(data, start=1):
+            self.show_message(f"{index}, {str(value)}")
+        
     def show_options_and_get_input(self, data, message):
         """this function takes data and displays it to the user, then returns specific data that the user selected."""
         self.show_message(message)
@@ -23,8 +27,7 @@ class UI:
             self.show_message("There was only one option, which has been selected for you automaticly.")
             return data[0]
         while True:
-            for index, value in enumerate(data, start=1):
-                self.show_message(f"{index}, {str(value)}")
+            self.show_multiple_elements(data)
             return self.select_from_list(data)
     def main_menu(self):
         """gets user input to return a command to main."""
@@ -39,10 +42,10 @@ class UI:
             "pin item",
             "sort list from pinned item",
             "calculate distance between pinned item and another item",
-            "reset list sorting"]
+            "reset list sorting",
+            "mineral search"]
         self.show_message("Main menu:")
-        for index, value in enumerate(options, start = 1):
-            self.show_message(f"{index}, {value}")
+        self.show_multiple_elements(options)
         return self.select_from_list(options)
     def display_list_system_objects(self, view_list):
         """this fuction manages displaying the list of system object, currently, it is paged, with 20 items on each page."""

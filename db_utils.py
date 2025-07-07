@@ -1,7 +1,7 @@
 import sqlite3
 from math import ceil
 from pathlib import Path
-from models import BaseSystemObject, NPRPop, PlayerPop, PlayerFleet, MissileSalvo, NonPlayerFleet
+from models import BaseSystemObject, BaseBody, NPRPop, PlayerPop, PlayerFleet, MissileSalvo, NonPlayerFleet
 class ConnectionFaildError(Exception):
     """error for if the programme attempts to connect to AuroraDB.db wen it is not there"""
 class SQLClass:
@@ -20,6 +20,7 @@ class SQLClass:
             self.cursor = self.connection.cursor()
             self.cursor.executescript("""
 CREATE INDEX IF NOT EXISTS idx_mod_systembody_lookup ON FCT_SystemBody (GameID, SystemID, Name);
+CREATE INDEX IF NOT EXISTS idx_mod_mineral_deposit_lookup ON FCT_MineralDeposit (SystemBodyID);
 CREATE INDEX IF NOT EXISTS idx_mod_population_player_colonies ON FCT_Population (GameID, RaceID, SystemID);
 CREATE INDEX IF NOT EXISTS idx_mod_alienpop_lookup ON FCT_AlienPopulation (GameID, ViewingRaceID);
 CREATE INDEX IF NOT EXISTS idx_mod_jumppoint_survey ON FCT_RaceJumpPointSurvey (RaceID, WarpPointID);
@@ -41,6 +42,7 @@ CREATE INDEX IF NOT EXISTS idx_mod_missilesalvo_lookup ON FCT_MissileSalvo (Game
         #close connection and drop indexes
         self.cursor.executescript("""
                                   DROP INDEX IF EXISTS idx_mod_systembody_lookup;
+                                  DROP INDEX IF EXISTS idx_mod_mineral_deposit_lookup;
 DROP INDEX IF EXISTS idx_mod_population_player_colonies;
 DROP INDEX IF EXISTS idx_mod_alienpop_lookup;
 DROP INDEX IF EXISTS idx_mod_jumppoint_survey;
@@ -68,6 +70,7 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
         return self.execute("SELECT SystemID, Name FROM FCT_RaceSysSurvey  WHERE raceID = ? AND GameID = ?", (race_id, game_id))
     def get_system_data(self, game_id, race_id, system_name, system_id):
         """Loads all important data"""
+        LIST_MINERALS =["duranium", "neutronium", "corbomite", "tritanium", "boronide", "mercassium", "vendarite", "sorium", "uridium", "corundium", "gallicite"] #list of minerals used to load mass driver packets and planets
         #Start loading lifepods in system
         self.cursor.execute("SELECT Xcor, Ycor, ShipName, Crew FROM FCT_Lifepods WHERE GameID = ? AND SystemID = ?", (game_id, system_id))
         list_system_objects = [BaseSystemObject(f"lifepod from {row[2]}", row[0], row[1], f"the lifepod has {row[3]} survivers on board", "lifepod") for row in self.cursor.fetchall()]
@@ -78,9 +81,8 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
         for row in self.cursor.fetchall():
             # Extract mineral contents from the packet, and match the numbers to the correct mineral
             list_indexes =[i for i in range(13, 24) if row[i] > 0]
-            list_minerals =["Duranium", "Neutronium", "Corbomite", "Tritanium", "Boronide", "Mercassium", "Vendarite", "Sorium", "Uridium", "Corundium", "Gallicite"]
-            packet_contents =[f"{list_minerals[i -13]}: {ceil(row[i])} tons" for i in list_indexes ]
-            list_system_objects +=BaseSystemObject(f"mass driver packet destination {row[-1]}", row[7], row[8], f"the packet contains {', '.join(packet_contents)}", "mass_driver_packet")
+            packet_contents =[f"{LIST_MINERALS[i -13]}: {ceil(row[i])} tons" for i in list_indexes ]
+            list_system_objects.append(BaseSystemObject(f"mass driver packet destination {row[-1]}", row[7], row[8], f"the packet contains {', '.join(packet_contents)}", "mass_driver_packet"))
             #load grav survey locations
         self.cursor.execute("SELECT * FROM  FCT_SurveyLocation WHERE GameID = ? AND SystemID = ?", (game_id, system_id))
         list_system_objects +=[BaseSystemObject(f"survey Point {row[3]}", row[4], row[-1], "", "grav_survey_location") for row in self.cursor.fetchall()]
@@ -104,18 +106,47 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
         WHERE FCT_Wrecks.gameID = ? and FCT_Wrecks.SystemID = ?""", (game_id, system_id))
         list_system_objects +=[BaseSystemObject(f"Wreck of a {row[1]} class ship", row[2], row[3], "", "wreck") for row in self.cursor.fetchall()]
         #load only uncolonized bodies, to avoid having duplicated objects
-        for row in self.execute("""SELECT FCT_SystemBody.Name, xcor, ycor, PlanetNumber, OrbitNumber FROM FCT_SystemBody
-        WHERE FCT_SystemBody.Name NOT IN
-        (SELECT FCT_Population.PopName FROM FCT_Population WHERE FCT_Population.RaceID = ? AND FCT_Population.SystemID = ? AND FCT_Population.GameID = ?)
-        AND FCT_SystemBody.GameID = ? AND FCT_SystemBody.systemID = ?""", (race_id, system_id, game_id, game_id, system_id)):
+        for row in self.execute("""SELECT FCT_SystemBody.Name, xcor, ycor, PlanetNumber, OrbitNumber,
+            COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 1 THEN FCT_MineralDeposit.Amount ELSE 0 END), 0) AS Mat1_Amount,
+            COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 1 THEN FCT_MineralDeposit.Accessibility ELSE 0 END), 0) AS Mat1_Accessibility,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 2 THEN FCT_MineralDeposit.Amount ELSE 0 END), 0) AS Mat2_Amount,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 2 THEN FCT_MineralDeposit.Accessibility ELSE 0 END), 0) AS Mat2_Accessibility,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 3 THEN FCT_MineralDeposit.Amount ELSE 0 END), 0) AS Mat3_Amount,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 3 THEN FCT_MineralDeposit.Accessibility ELSE 0 END), 0) AS Mat3_Accessibility,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 4 THEN FCT_MineralDeposit.Amount ELSE 0 END), 0) AS Mat4_Amount,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 4 THEN FCT_MineralDeposit.Accessibility ELSE 0 END), 0) AS Mat4_Accessibility,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 5 THEN FCT_MineralDeposit.Amount ELSE 0 END), 0) AS Mat5_Amount,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 5 THEN FCT_MineralDeposit.Accessibility ELSE 0 END), 0) AS Mat5_Accessibility,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 6 THEN FCT_MineralDeposit.Amount ELSE 0 END), 0) AS Mat6_Amount,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 6 THEN FCT_MineralDeposit.Accessibility ELSE 0 END), 0) AS Mat6_Accessibility,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 7 THEN FCT_MineralDeposit.Amount ELSE 0 END), 0) AS Mat7_Amount,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 7 THEN FCT_MineralDeposit.Accessibility ELSE 0 END), 0) AS Mat7_Accessibility,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 8 THEN FCT_MineralDeposit.Amount ELSE 0 END), 0) AS Mat8_Amount,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 8 THEN FCT_MineralDeposit.Accessibility ELSE 0 END), 0) AS Mat8_Accessibility,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 9 THEN FCT_MineralDeposit.Amount ELSE 0 END), 0) AS Mat9_Amount,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 9 THEN FCT_MineralDeposit.Accessibility ELSE 0 END), 0) AS Mat9_Accessibility,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 10 THEN FCT_MineralDeposit.Amount ELSE 0 END), 0) AS Mat10_Amount,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 10 THEN FCT_MineralDeposit.Accessibility ELSE 0 END), 0) AS Mat10_Accessibility,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 11 THEN FCT_MineralDeposit.Amount ELSE 0 END), 0) AS Mat11_Amount,
+    COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 11 THEN FCT_MineralDeposit.Accessibility ELSE 0 END), 0) AS Mat11_Accessibility
+                                FROM FCT_SystemBody
+                                LEFT JOIN FCT_SystemBodySurveys ON FCT_SystemBodySurveys.SystemBodyID = FCT_SystemBody.SystemBodyID
+                                LEFT JOIN FCT_MineralDeposit ON FCT_MineralDeposit.SystemBodyID = FCT_SystemBodySurveys.SystemBodyID
+        WHERE FCT_SystemBody.GameID = ? AND FCT_SystemBody.systemID = ?
+        GROUP BY FCT_SystemBody.SystemBodyID""", (game_id, system_id)):
             if row[0] != "":
-                list_system_objects.append(BaseSystemObject(row[0], row[1], row[2], "", "body"))
+                name = row[0]
             elif row[4] == 0:
                 # makes sure all system bodies have a name. this branch makes sure planets are named correctly
-                list_system_objects.append(BaseSystemObject(f"{system_name} {row[3]}", row[1], row[2], "", "body"))
+                name = f"{system_name} {row[3]}"
             else:
                 #this handles moons
-                list_system_objects.append(BaseSystemObject(f"{system_name} {row[3]} moon {row[4]}", row[1], row[2], "", "body"))
+                name = f"{system_name} {row[3]} moon {row[4]}"
+            amounts = row[5::2]
+            access = row[6::2]
+            unformatted_minerals = zip(LIST_MINERALS, amounts, access)
+            minerals ={mineral: (amount, access) for mineral, amount, access in unformatted_minerals}
+            list_system_objects.append(BaseBody(name, row[1], row[2], "", "body", minerals))
         # Load colonized bodies not belonging to the player race
         self.cursor.execute("""SELECT EMSignature, ThermalSignature, PopulationName, xcor, ycor FROM FCT_AlienPopulation
                     JOIN FCT_systemBody ON FCT_Population.SystemBodyID = FCT_systemBody .SystemBodyID
@@ -179,5 +210,5 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
             GROUP BY FCT_MissileSalvo.MissileSalvoID""", (game_id, system_id))]
         #load weapon impact contacts, nuclear and energy weapons
         list_system_objects +=[BaseSystemObject(row[0], row[1], row[2], "", "weapon_contact") for row in self.execute("SELECT ContactName, xcor, ycor FROM FCT_Contacts WHERE ContactType IN (17, 18) AND GameID = ? AND DetectRaceID = ? AND SystemID = ?", (game_id, race_id, system_id))]
-        list_system_objects.append(BaseSystemObject("central star", 0, 0, "", ""))
+        list_system_objects.append(BaseSystemObject("central star", 0, 0, "", "star"))
         return list_system_objects

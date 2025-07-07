@@ -1,6 +1,6 @@
 import sys
 from db_utils import SQLClass
-from controler import AppControler
+from controller import AppControler
 from ui import UI
 from data_loader import get_starting_data, get_race_data, get_system_data
 from settings import SettingsManager
@@ -71,6 +71,24 @@ def main():
                 ui.show_message(f"distance {controller.find_distance(item)}")
         elif choice == "reset list sorting":
             controller.make_list_default()
+        elif choice == "mineral search":
+            full_query= []
+            while True:
+                try:
+                    query = ui.prompt_for_input("Enter the mineral you would like to search for, amount, and access seperated by a space. example, gallicite 250000 0.5, or enter done to search")
+                    if query.lower() == "done" and len(full_query) == 0:
+                        break
+                    elif query == "done":
+                        results =controller.mineral_search(full_query)
+                        ui.show_multiple_elements(results)
+                        break
+                    query =query.split()
+                    query[0].lower()
+                    int(query[1])
+                    float(query[2])
+                    full_query.append(query)
+                except (OSError):
+                    ui.show_message("Invalid input")
         else:
             ui.show_message("Invalid option.")
 if __name__ == "__main__":

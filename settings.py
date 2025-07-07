@@ -2,13 +2,14 @@ import json
 class SettingsManager:
     def __init__(self):
         self.settings = self.load_settings()
+        self.save_settings()
     def load_settings(self):
         """loads settings for filtering data"""
         try:
             with open("settings.json", mode="r", encoding="utf-8") as read_file:
                 return json.load(read_file)
         except (FileNotFoundError, json.JSONDecodeError): # If the file doesn't exist or is unreadable, save it with everything set to true
-            self.settings = {
+            default_settings = {
                 "lifepod": True,
                 "mass_driver_packet": True,
                 "grav_survey_location": True,
@@ -20,7 +21,7 @@ class SettingsManager:
                 "missile_salvo": True,
                 "weapon_contact": True,
                 "star": True}
-            self.save_settings()
+            return default_settings
     
     def save_settings(self):
         """Saves settings to settings.json"""
