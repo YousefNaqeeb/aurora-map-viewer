@@ -68,7 +68,7 @@ def main():
                 ui.show_message("Could not find what you were looking for.")
             else:
                 item = ui.show_options_and_get_input(results, "Search found following results:")
-                ui.show_message(f"distance {controller.find_distance(item)}, bearing: {controller.find_bearing(item)}")
+                ui.show_message(f"distance {controller.find_distance(item)}, bearing: {controller.find_bearing(item)} degrees")
         elif choice == "reset list sorting":
             controller.make_list_default()
         elif choice == "mineral search":
