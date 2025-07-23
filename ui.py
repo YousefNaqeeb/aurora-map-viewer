@@ -5,8 +5,12 @@ class UI(wx.Frame):
         
         # Main sizer
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
+        # Content panel
         self.content_panel = wx.Panel(self)
+        self.content_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.content_panel.SetSizer(self.content_sizer)
         self.main_sizer.Add(self.content_panel, 1, wx.ALL|wx.EXPAND, 10)
+        # Button panel
         self.button_panel = wx.Panel(self)
         self.button_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.button_panel.SetSizer(self.button_sizer)
@@ -17,11 +21,14 @@ class UI(wx.Frame):
         self.Show()
         
     def show_message(self, message, is_error = False):
-        """used to print what ever is sent to it."""
+        """used to display what ever is sent to it."""
+        for child in self.content_panel.GetChildren():
+            child.destroy()
         if is_error:
-            print(f"An error has occured, {message}")
-        else:
-            print(message)
+            message = f"An error has occured, {message}"
+        message_text = wx.StaticText(self.content_panel, label=message)
+        self.content_panel.GetSizer().Add(message_text, wx.ALL, 10)
+        self.content_panel.Layout()
     def prompt_for_input(self, prompt_text):
         """gets input from the user"""
         return input(f"{prompt_text}: ")

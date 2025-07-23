@@ -11,6 +11,7 @@ def main():
     # Initialise all components
     app = wx.App()
     ui = UI(None, "Aurora Map Viewer", (600, 500))
+    ui.show_message("test message")
     app.MainLoop()
     """
     db = SQLClass()
