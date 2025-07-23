@@ -1,4 +1,21 @@
-class UI:
+import wx
+class UI(wx.Frame):
+    def __init__(self, parent, title, size):
+        super().__init__(None, title=title, size=size)
+        
+        # Main sizer
+        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.content_panel = wx.Panel(self)
+        self.main_sizer.Add(self.content_panel, 1, wx.ALL|wx.EXPAND, 10)
+        self.button_panel = wx.Panel(self)
+        self.button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.button_panel.SetSizer(self.button_sizer)
+        self.main_sizer.Add(self.button_panel, 0, wx.ALL, 5)
+        self.button_panel.Hide()
+        self.SetSizer(self.main_sizer)
+        self.Center()
+        self.Show()
+        
     def show_message(self, message, is_error = False):
         """used to print what ever is sent to it."""
         if is_error:

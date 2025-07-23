@@ -1,4 +1,5 @@
 import sys
+import wx
 from db_utils import SQLClass
 from controller import AppControler
 from ui import UI
@@ -7,8 +8,11 @@ from settings import SettingsManager
 
 def main():
     """Main function"""
-    #initialise all components
-    ui = UI()
+    # Initialise all components
+    app = wx.App()
+    ui = UI(None, "Aurora Map Viewer", (600, 500))
+    app.MainLoop()
+    """
     db = SQLClass()
     ui.show_message("Establishing connection to DB.")
     result = db.connect()
@@ -91,5 +95,6 @@ def main():
                     ui.show_message("Invalid input")
         else:
             ui.show_message("Invalid option.")
+            """
 if __name__ == "__main__":
     main()
