@@ -96,3 +96,7 @@ class AppControler:
         sorted_results =sorted(results, reverse=True)
         results=[i[1] for i in sorted_results]
         return results
+    def handle_closing(self):
+        if self.db.connection != None:
+            self.db.close()
+            

@@ -1,4 +1,3 @@
-import sys
 import wx
 from db_utils import SQLClass
 from controller import AppControler
@@ -9,21 +8,21 @@ from settings import SettingsManager
 def main():
     """Main function"""
     # Initialise all components
-    app = wx.App()
-    ui = UI(None, "Aurora Map Viewer", (600, 500))
-    ui.show_message("test message")
-    app.MainLoop()
-    """
     db = SQLClass()
+    settings_manager = SettingsManager()
+    controller = AppControler(db, settings_manager)
+    app = wx.App()
+    ui = UI(None, "Aurora Map Viewer", controller, (600, 500))
     ui.show_message("Establishing connection to DB.")
     result = db.connect()
     if result[1]:
         ui.show_message(result[0])
     else:
         ui.show_message(result[0], True)
-        sys.exit()
-    settings_manager = SettingsManager()
-    controller = AppControler(db, settings_manager)
+        UI.Close()
+    print("got to jutbefore the loop")
+    app.MainLoop()
+    """
     chosen_game, chosen_race, chosen_system = get_starting_data(db, ui)
     ui.show_message(f"loading system {chosen_system[1]}")
     controller.load_starting_data(chosen_game, chosen_race, chosen_system[0], chosen_system[1])

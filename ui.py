@@ -1,8 +1,8 @@
 import wx
 class UI(wx.Frame):
-    def __init__(self, parent, title, size):
+    def __init__(self, parent, title, controller, size):
         super().__init__(None, title=title, size=size)
-        
+        self.controller = controller
         # Main sizer
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
         # Content panel
@@ -19,16 +19,28 @@ class UI(wx.Frame):
         self.SetSizer(self.main_sizer)
         self.Center()
         self.Show()
+        # Event defenitions
+        self.Bind(wx.EVT_CLOSE, self.on_close)
         
+    
+    def on_close(self, event):
+        self.show_message("closing program")
+        self.Update()
+        self.controller.handle_closing()
+        print("About to skip event")  # Debug line
+        event.Skip()
+    
     def show_message(self, message, is_error = False):
         """used to display what ever is sent to it."""
         for child in self.content_panel.GetChildren():
-            child.destroy()
+            child.Destroy()
         if is_error:
             message = f"An error has occured, {message}"
         message_text = wx.StaticText(self.content_panel, label=message)
         self.content_panel.GetSizer().Add(message_text, wx.ALL, 10)
         self.content_panel.Layout()
+        wx.CallAfter(message_text.SetFocus)
+    
     def prompt_for_input(self, prompt_text):
         """gets input from the user"""
         return input(f"{prompt_text}: ")
