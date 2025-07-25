@@ -4,19 +4,17 @@ class UI(wx.Frame):
         super().__init__(None, title=title, size=size)
         self.controller = controller
         # Main sizer
-        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
+        self.frame_sizer = wx.BoxSizer(wx.VERTICAL)
         # Content panel
-        self.content_panel = wx.Panel(self)
+        self.main_panel = wx.Panel(self, style=wx.TAB_TRAVERSAL)
+        self.main_sizer = wx.BoxSizer(wx.VERTICAL)
         self.content_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.content_panel.SetSizer(self.content_sizer)
-        self.main_sizer.Add(self.content_panel, 1, wx.ALL|wx.EXPAND, 10)
-        # Button panel
-        self.button_panel = wx.Panel(self)
+        self.main_panel.SetSizer(self.main_sizer)
+        self.frame_sizer.Add(self.main_panel, 1, wx.ALL|wx.EXPAND, 10)
+        # Button sizer
         self.button_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.button_panel.SetSizer(self.button_sizer)
-        self.main_sizer.Add(self.button_panel, 0, wx.ALL, 5)
-        self.button_panel.Hide()
-        self.SetSizer(self.main_sizer)
+        self.main_sizer.Add(self.button_sizer, 0, wx.EXPAND)
+        self.SetSizer(self.frame_sizer)
         self.Center()
         self.Show()
         # Event defenitions
@@ -25,46 +23,61 @@ class UI(wx.Frame):
     
     def on_close(self, event):
         self.show_message("closing program")
-        self.Update()
         self.controller.handle_closing()
-        print("About to skip event")  # Debug line
         event.Skip()
+    
+    def clear_screen(self):
+        self.content_sizer.Clear(delete_windows=True)
+        self.button_sizer.Clear(delete_windows=True)
+        self.main_panel.Layout
     
     def show_message(self, message, is_error = False):
         """used to display what ever is sent to it."""
-        for child in self.content_panel.GetChildren():
-            child.Destroy()
+        self.clear_screen() # Makes sure screen is ready for new messages an such
         if is_error:
             message = f"An error has occured, {message}"
-        message_text = wx.StaticText(self.content_panel, label=message)
-        self.content_panel.GetSizer().Add(message_text, wx.ALL, 10)
-        self.content_panel.Layout()
-        wx.CallAfter(message_text.SetFocus)
+        message_text = wx.StaticText(self.main_panel, label=message)
+        self.content_sizer.Add(message_text, wx.ALL, 10)
+        self.main_panel.Layout()
+        self.Update()
+        wx.CallAfter(message_text.SetFocus) # Makes sure focus is set so screenreaders read the message
     
-    def prompt_for_input(self, prompt_text):
+    def prompt_for_input(self, prompt_text): # Fiishin convertig tis ater
         """gets input from the user"""
+        """
+        self.show_message(prompt_text)
+        self.text_input = wx.TextCtrl(self.content_panel)
+        self.content_panel.GetSizer().Add(self.text_input, wx.ALL|wx.EXPAND, 5)
+        submit_button = wx.Button(self.button_panel, label="submit")
+        self.button_panel.GetSizer().Add(submit_button, wx.ALL|wx.EXPAND, 5)
+        """        
         return input(f"{prompt_text}: ")
-    def select_from_list(self, data):
-        while True:
-            try: #makes sure the choice is a correct value
-                choice = data[int(self.prompt_for_input("Enter the number corresponding to the option you would like to select.")) - 1]
-                return choice
-            except (ValueError, TypeError, IndexError):
-                self.show_message("You must enter a valid number.")
-                continue
+    def select_from_list(self, data, message, callback):
+        self.show_message(message)
+        """makes a combo box for selecting items from a list with a callback"""
+        combo_box = wx.ComboBox(self.main_panel, style=wx.CB_READONLY)
+        for i in data:
+            index = combo_box.Append(i[1])
+            combo_box.SetClientData(index, i[0])
+        self.content_sizer.Add(combo_box, wx.ALL|wx.EXPAND, 5)
+        wx.CallAfter(combo_box.SetFocus)
+        combo_box.callback = callback
+        submit_btn  = wx.Button(self.main_panel, label="submit")
+        submit_btn.SetCanFocus(True)
+        self.button_sizer.Add(submit_btn, wx.ALL|wx.EXPAND, 5)
+        self.main_panel.Layout()
+        submit_btn.Bind(wx.EVT_BUTTON, self.on_select_from_combo)
+        submit_btn.combo_box = combo_box
+    def on_select_from_combo(self, event):
+        combo_box = event.GetEventObject().combo_box
+        index = combo_box.GetSelection()
+        if index != wx.NOT_FOUND:
+            item = combo_box.GetClientData(index)
+            combo_box.callback(item)
+    
     def show_multiple_elements(self, data):
         for index, value in enumerate(data, start=1):
             self.show_message(f"{index}, {str(value)}")
-        
-    def show_options_and_get_input(self, data, message):
-        """this function takes data and displays it to the user, then returns specific data that the user selected."""
-        self.show_message(message)
-        if len(data) == 1: #returns the first item if there is only one
-            self.show_message("There was only one option, which has been selected for you automaticly.")
-            return data[0]
-        while True:
-            self.show_multiple_elements(data)
-            return self.select_from_list(data)
     def main_menu(self):
         """gets user input to return a command to main."""
         options = [

@@ -1,10 +1,15 @@
 import math
+from db_utils import SQLClass
+from ui import UI
+from settings import SettingsManager
 from models import ProximityObject
+
 class AppControler:
     """Manages state of variables, will contain more app logic such as search. does not handle UI"""
-    def __init__(self, db_handler, settings_manager):
-        self.db = db_handler
-        self.settings_manager = settings_manager
+    def __init__(self):
+        self.db = SQLClass()
+        self.settings_manager = SettingsManager()
+        self.ui = ui = UI(None, "Aurora Map Viewer", self, (600, 500))
         self.game_id = None
         self.race_id = None
         self.system_id = None
@@ -12,18 +17,42 @@ class AppControler:
         self.Master_object_list = []
         self.view_list = []
         self.pinned_object = None
-    def load_starting_data(self, game_id, race_id, system_id, system_name):
+        self.ui.show_message("Establishing connection to DB.")
+        result = self.db.connect()
+        if result[1]:
+            self.ui.show_message(result[0])
+        else:
+            self.ui.show_message(result[0], True)
+            self.ui.Close()
+        self.get_starting_data()
+    def get_starting_data(self):
+        """Get game ID, then call the function that gets system and race data"""
+        games = self.db.get_games()
+        self.ui.select_from_list(games, "Select a game to load.", self.on_change_game)
+    
+    def on_change_game(self, game_id):
         """fully loads all game data and stores IDs"""
         self.game_id = game_id
-        self.change_race(race_id, system_id, system_name)
-    def change_race(self, race_id, system_id, system_name):
+        self.change_race()
+        
+    def change_race(self):
+        """Get race data, then call function to get system data in on event"""
+        player_races = self.db.get_player_races(self.game_id)
+        self.ui.select_from_list(player_races, "Select which race you would like to load.", self.on_change_race)
+    
+    def on_change_race(self, race_id):
         """updates race and system information"""
         self.race_id = race_id
-        self.change_system(system_id, system_name)
-    def change_system(self, system_id, system_name):
+        self.change_system()
+    
+    def change_system(self):
+        """Get system ID and data"""
+        systems = self.db.get_systems(self.game_id, self.race_id)
+        self.ui.select_from_list(systems, "Select a system to load.", self.on_change_system)
+
+    def on_change_system(self, system_id):
         """updates system information"""
         self.system_id = system_id
-        self.system_name = system_name
         self.Master_object_list = self.db.get_system_data(self.game_id, self.race_id, self.system_name, self.system_id)
         self.make_list_default()
     def make_list_default(self):
