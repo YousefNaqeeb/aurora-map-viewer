@@ -17,12 +17,12 @@ class AppControler:
         self.Master_object_list = []
         self.view_list = []
         self.pinned_object = None
-        self.ui.show_message("Establishing connection to DB.")
+        self.ui.update_status("Establishing connection to DB.")
         result = self.db.connect()
         if result[1]:
-            self.ui.show_message(result[0])
+            self.ui.update_status(result[0])
         else:
-            self.ui.show_message(result[0], True)
+            self.ui.update_status(result[0], True)
             self.ui.Close()
         self.get_starting_data()
     def get_starting_data(self):
