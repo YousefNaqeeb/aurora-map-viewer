@@ -11,22 +11,22 @@ def main():
     while True: # Main loop
         choice = ui.main_menu()
         if choice == "exit":
-            ui.show_message("Exiting program")
+            ui.update_status("Exiting program")
             db.close()
             break
         elif choice == "change game":
             chosen_game, chosen_race, chosen_system = get_starting_data(db, ui)
-            ui.show_message(f"loading system {chosen_system[1]}")
+            ui.update_status(f"loading system {chosen_system[1]}")
             controller.load_starting_data(chosen_game, chosen_race, chosen_system[0], chosen_system[1])
-            ui.show_message("Data loaded.")
+            ui.update_status("Data loaded.")
         elif choice == "change race":
             chosen_race, chosen_system = get_race_data(db, ui, controller.game_id)
             controller.change_race(chosen_race, chosen_system[0], chosen_system[1])
-            ui.show_message("Data updated")
+            ui.update_status("Data updated")
         elif choice == "change system":
             chosen_system = get_system_data(db, ui, controller.game_id, controller.race_id)
             controller.change_system(chosen_system[0], chosen_system[1])
-            ui.show_message("Data updated.")
+            ui.update_status("Data updated.")
         elif choice == "view list":
             ui.display_list_system_objects(controller.view_list)
         elif choice == "edit filter settings":
@@ -37,11 +37,11 @@ def main():
                 controller.toggle_setting(settings_choice, settings_manager.settings[settings_choice])
         elif choice == "apply filters":
             controller.apply_filters()
-            ui.show_message("list updated")
+            ui.update_status("list updated")
         elif choice == "pin item":
             results = controller.search_list(ui.prompt_for_input("enter something to search"))
             if results == []:
-                ui.show_message("Could not find what you were looking for.")
+                ui.update_status("Could not find what you were looking for.")
             else:
                 pinned_object = ui.show_options_and_get_input(results, "Search found following results:")
                 controller.pinned_object = pinned_object
@@ -50,10 +50,10 @@ def main():
         elif choice == "calculate distance between pinned item and another item":
             results = controller.search_list(ui.prompt_for_input("enter something to search"))
             if results == []:
-                ui.show_message("Could not find what you were looking for.")
+                ui.update_status("Could not find what you were looking for.")
             else:
                 item = ui.show_options_and_get_input(results, "Search found following results:")
-                ui.show_message(f"distance {controller.find_distance(item)}, bearing: {controller.find_bearing(item)} degrees")
+                ui.update_status(f"distance {controller.find_distance(item)}, bearing: {controller.find_bearing(item)} degrees")
         elif choice == "reset list sorting":
             controller.make_list_default()
         elif choice == "mineral search":
@@ -73,9 +73,9 @@ def main():
                     float(query[2])
                     full_query.append(query)
                 except (ValueError, KeyError):
-                    ui.show_message("Invalid input")
+                    ui.update_status("Invalid input")
         else:
-            ui.show_message("Invalid option.")
+            ui.update_status("Invalid option.")
             """
 if __name__ == "__main__":
     main()

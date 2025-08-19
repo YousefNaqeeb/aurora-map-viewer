@@ -16,10 +16,12 @@ class UI(wx.Frame):
         self.main_panel.SetForegroundColour(wx.Colour(70, 130, 180))
         self.content_sizer.Add(self.status_text, wx.ALL, 10)
         
-        self.button_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.main_sizer.Add(self.button_sizer, 0, wx.EXPAND)
         self.SetSizer(self.frame_sizer)
         self.main_panel.SetBackgroundColour(BG_COLOR)
+        self.id_select_panel = IDSelectPanel(self, self.controller)
+        self.panels = {"id_panel": self.id_select_panel}
+        for i in self.panels.values():
+            self.frame_sizer.Add(i, 1, wx.ALL|wx.EXPAND, 10)
         self.Center()
         self.Show()
 
@@ -32,9 +34,8 @@ class UI(wx.Frame):
         event.Skip()
     
     def clear_screen(self):
-        self.content_sizer.Clear(delete_windows=True)
-        self.button_sizer.Clear(delete_windows=True)
-        self.main_panel.Layout
+        for i in self.panels.values():
+            i.Hide()
     
     def update_status(self, message, is_error = False):
         """used to display what ever is sent to it."""
@@ -56,27 +57,15 @@ class UI(wx.Frame):
         """        
         return input(f"{prompt_text}: ")
     def select_from_list(self, data, message, callback):
-        self.update_status(message)
         """makes a combo box for selecting items from a list with a callback"""
-        combo_box = wx.ComboBox(self.main_panel, style=wx.CB_READONLY)
+        self.id_select_panel.text.SetLabel(message)
+        self.id_select_panel.callback = callback
         for i in data:
-            index = combo_box.Append(i[1])
-            combo_box.SetClientData(index, i[0])
-        self.content_sizer.Add(combo_box, wx.ALL|wx.EXPAND, 5)
-        wx.CallAfter(combo_box.SetFocus)
-        combo_box.callback = callback
-        submit_btn  = wx.Button(self.main_panel, label="submit")
-        submit_btn.SetCanFocus(True)
-        self.button_sizer.Add(submit_btn, wx.ALL|wx.EXPAND, 5)
-        self.main_panel.Layout()
-        submit_btn.Bind(wx.EVT_BUTTON, self.on_select_from_combo)
-        submit_btn.combo_box = combo_box
-    def on_select_from_combo(self, event):
-        combo_box = event.GetEventObject().combo_box
-        index = combo_box.GetSelection()
-        if index != wx.NOT_FOUND:
-            item = combo_box.GetClientData(index)
-            combo_box.callback(item)
+            index = self.id_select_panel.combo_box.Append(i[1])
+            self.id_select_panel.combo_box.SetClientData(index, i[0])
+        wx.CallAfter(self.id_select_panel.combo_box.SetFocus)
+        self.id_select_panel.Show()
+        self.id_select_panel.Layout()
     
     def show_multiple_elements(self, data):
         for index, value in enumerate(data, start=1):
@@ -142,4 +131,35 @@ class UI(wx.Frame):
                 return list(settings)[choice - 1]
             except (ValueError, TypeError, IndexError):
                 self.update_status("Invalid option.")
-                
+
+class IDSelectPanel(wx.Panel):
+    """
+    class with combo box and button for submitting. for giving user options with tuples where one option is the ID
+    will return ID to controller from the on event
+    """
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        self.SetBackgroundColour(BG_COLOR)
+        self.SetForegroundColour(wx.Colour(70, 130, 180))
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.message, self.data, self.callback = (None, None, None)
+        self.text = wx.StaticText(self, label="")
+        self.sizer.Add(self.text, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+        self.combo_box = wx.ComboBox(self, style=wx.CB_READONLY)
+        self.sizer.Add(self.combo_box, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 20)
+        wx.CallAfter(self.combo_box.SetFocus)
+        self.combo_box.callback = self.callback
+        self.submit_btn  = wx.Button(self, label="submit")
+        self.sizer.Add(self.submit_btn, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+        self.SetSizer(self.sizer)
+        
+        self.Center()
+        self.Layout()
+        self.submit_btn.Bind(wx.EVT_BUTTON, self.on_select_from_combo)
+        
+    def on_select_from_combo(self, event):
+        index = self.combo_box.GetSelection()
+        if index != wx.NOT_FOUND:
+            item = self.combo_box.GetClientData(index)
+            self.callback(item)
