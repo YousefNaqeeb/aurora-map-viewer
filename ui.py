@@ -162,4 +162,5 @@ class IDSelectPanel(wx.Panel):
         index = self.combo_box.GetSelection()
         if index != wx.NOT_FOUND:
             item = self.combo_box.GetClientData(index)
+            self.combo_box.Clear()
             self.callback(item)
