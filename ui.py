@@ -64,7 +64,8 @@ class UI(wx.Frame):
         """        
         return input(f"{prompt_text}: ")
     def select_from_list(self, data, message, callback):
-        """passes data to he id selct panel"""
+        """passes data to the id select panel"""
+        self.id_select_panel.SetFocus()
         self.id_select_panel.text.SetLabel(message)
         self.id_select_panel.callback = callback
         for i in data:
@@ -73,28 +74,17 @@ class UI(wx.Frame):
         wx.CallAfter(self.id_select_panel.combo_box.SetFocus)
         self.id_select_panel.Show()
         self.id_select_panel.Layout()
+        self.id_select_panel.SetFocus()
     
     def show_multiple_elements(self, data):
         for index, value in enumerate(data, start=1):
             self.update_status(f"{index}, {str(value)}")
-    def main_menu(self):
-        """gets user input to return a command to main."""
-        options = [
-            "exit",
-            "change game",
-            "change race",
-            "change system",
-            "view list",
-            "edit filter settings",
-            "apply filters",
-            "pin item",
-            "sort list from pinned item",
-            "calculate distance between pinned item and another item",
-            "reset list sorting",
-            "mineral search"]
-        self.update_status("Main menu:")
-        self.show_multiple_elements(options)
-        return self.select_from_list(options)
+    
+    def show_main_menu(self):
+        self.main_menu_panel.Layout()
+        self.main_menu_panel.Show()
+        self.main_menu_panel.title.SetFocus()
+
     def display_list_system_objects(self, view_list):
         """this fuction manages displaying the list of system object, currently, it is paged, with 20 items on each page."""
         page = 0
@@ -174,7 +164,6 @@ class MainMenu(wx.Panel):
         super().__init__(parent)
         self.controller = controller
         setup_frame_styling(self)
-                # Create title
         self.title = wx.StaticText(self, label="Main Menu")
         title_font = self.title.GetFont()
         title_font.PointSize += 4
@@ -182,7 +171,6 @@ class MainMenu(wx.Panel):
         self.title.SetFont(title_font)
         self.sizer.Add(self.title, 0, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
         
-        # Create buttons for all menu options
         self.exit_btn = wx.Button(self, label="Exit")
         self.change_game_btn = wx.Button(self, label="Change Game")
         self.change_race_btn = wx.Button(self, label="Change Race")
@@ -196,7 +184,6 @@ class MainMenu(wx.Panel):
         self.reset_sorting_btn = wx.Button(self, label="Reset List Sorting")
         self.mineral_search_btn = wx.Button(self, label="Mineral Search")
         
-        # Add all buttons to sizer
         buttons = [
             self.exit_btn,
             self.change_game_btn,
@@ -212,7 +199,6 @@ class MainMenu(wx.Panel):
             self.mineral_search_btn
         ]
         
-        # Create a grid sizer for better layout
         button_sizer = wx.GridSizer(cols=2, hgap=10, vgap=10)
         
         for button in buttons:
@@ -221,11 +207,10 @@ class MainMenu(wx.Panel):
         self.sizer.Add(button_sizer, 1, wx.ALL|wx.EXPAND, 20)
         self.SetSizer(self.sizer)
         
-        # Bind events directly to controller methods
-        self.exit_btn.Bind(wx.EVT_BUTTON, self.on_exit)  # Special case - needs to close window
-        self.change_game_btn.Bind(wx.EVT_BUTTON, self.controller.handle_change_game)
-        self.change_race_btn.Bind(wx.EVT_BUTTON, self.controller.handle_change_race)
-        self.change_system_btn.Bind(wx.EVT_BUTTON, self.controller.handle_change_system)
+        self.exit_btn.Bind(wx.EVT_BUTTON, self.on_exit)
+        self.change_game_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.get_starting_data())
+        self.change_race_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.change_race())
+        self.change_system_btn.Bind(wx.EVT_BUTTON, lambda evt: self/controller.change_system())
         self.view_list_btn.Bind(wx.EVT_BUTTON, self.controller.handle_view_list)
         self.edit_filter_btn.Bind(wx.EVT_BUTTON, self.controller.handle_edit_filter_settings)
         self.apply_filters_btn.Bind(wx.EVT_BUTTON, self.controller.handle_apply_filters)
@@ -236,6 +221,5 @@ class MainMenu(wx.Panel):
         self.mineral_search_btn.Bind(wx.EVT_BUTTON, self.controller.handle_mineral_search)
         self.title.SetFocus()
     def on_exit(self, event):
-        # Special case - needs to trigger window close
         close_event = wx.CloseEvent(wx.wxEVT_CLOSE_WINDOW)
-        self.GetParent().on_close(close_event)
+        self.GetParent().on_close(event)

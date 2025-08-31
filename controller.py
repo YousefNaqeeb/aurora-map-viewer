@@ -55,9 +55,9 @@ class AppControler:
         self.Master_object_list = self.db.get_system_data(self.game_id, self.race_id, self.system_name, self.system_id)
         self.make_list_default()
         self.ui.id_select_panel.Hide()
-        self.ui.main_menu_panel.Layout()
-        self.ui.main_menu_panel.Show()
-        self.ui.main_menu_panel.title.SetFocus()
+        self.ui.show_main_menu()
+
+    
     def make_list_default(self):
         self.pinned_object = self.Master_object_list[-1]
         self.view_list = self.Master_object_list
@@ -131,10 +131,7 @@ class AppControler:
     def handle_closing(self):
         if self.db.connection != None:
             self.db.close()
-    def handle_change_game(self, event):
-        """Handle change game button click"""
-        pass
-    
+            self.ui.Close()
     def handle_change_race(self, event):
         """Handle change race button click"""
         pass
