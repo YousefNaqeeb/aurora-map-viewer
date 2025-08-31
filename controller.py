@@ -5,7 +5,6 @@ from settings import SettingsManager
 from models import ProximityObject
 
 class AppControler:
-    """Manages state of variables, will contain more app logic such as search. does not handle UI"""
     def __init__(self):
         self.db = SQLClass()
         self.settings_manager = SettingsManager()
@@ -51,10 +50,14 @@ class AppControler:
         self.ui.select_from_list(systems, "Select a system to load.", self.on_change_system)
 
     def on_change_system(self, system_id):
-        """updates system information"""
+        """updates system information hide panel, and show main menu"""
         self.system_id = system_id
         self.Master_object_list = self.db.get_system_data(self.game_id, self.race_id, self.system_name, self.system_id)
         self.make_list_default()
+        self.ui.id_select_panel.Hide()
+        self.ui.main_menu_panel.Layout()
+        self.ui.main_menu_panel.Show()
+        self.ui.main_menu_panel.title.SetFocus()
     def make_list_default(self):
         self.pinned_object = self.Master_object_list[-1]
         self.view_list = self.Master_object_list
@@ -128,4 +131,47 @@ class AppControler:
     def handle_closing(self):
         if self.db.connection != None:
             self.db.close()
+    def handle_change_game(self, event):
+        """Handle change game button click"""
+        pass
+    
+    def handle_change_race(self, event):
+        """Handle change race button click"""
+        pass
+    
+    def handle_change_system(self, event):
+        """Handle change system button click"""
+        pass
+    
+    def handle_view_list(self, event):
+        """Handle view list button click"""
+        pass
+    
+    def handle_edit_filter_settings(self, event):
+        """Handle edit filter settings button click"""
+        pass
+    
+    def handle_apply_filters(self, event):
+        """Handle apply filters button click"""
+        pass
+    
+    def handle_pin_item(self, event):
+        """Handle pin item button click"""
+        pass
+    
+    def handle_sort_from_pinned(self, event):
+        """Handle sort from pinned button click"""
+        pass
+    
+    def handle_calc_distance(self, event):
+        """Handle calculate distance button click"""
+        pass
+    
+    def handle_reset_sorting(self, event):
+        """Handle reset sorting button click"""
+        pass
+    
+    def handle_mineral_search(self, event):
+        """Handle mineral search button click"""
+        pass
             

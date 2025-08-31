@@ -1,5 +1,12 @@
 import wx
-BG_COLOR = wx.Colour(245, 245, 245)
+
+
+def setup_frame_styling(frame):
+    frame.SetBackgroundColour(wx.Colour(245, 245, 245))
+    frame.SetForegroundColour(wx.Colour(70, 130, 180))
+    frame.sizer = wx.BoxSizer(wx.VERTICAL)
+
+
 class UI(wx.Frame):
     def __init__(self, parent, title, controller, size):
         super().__init__(None, title=title, size=size)
@@ -8,18 +15,18 @@ class UI(wx.Frame):
 
         self.main_panel = wx.Panel(self, style=wx.TAB_TRAVERSAL)
         self.main_sizer = wx.BoxSizer(wx.VERTICAL)
-        self.content_sizer = wx.BoxSizer(wx.VERTICAL)
+        setup_frame_styling(self)
         self.main_panel.SetSizer(self.main_sizer)
         self.frame_sizer.Add(self.main_panel, 1, wx.ALL|wx.EXPAND, 10)
         
         self.status_text = wx.StaticText(self.main_panel, label="establishing connection")
         self.main_panel.SetForegroundColour(wx.Colour(70, 130, 180))
-        self.content_sizer.Add(self.status_text, wx.ALL, 10)
+        self.sizer.Add(self.status_text, wx.ALL, 10)
         
         self.SetSizer(self.frame_sizer)
-        self.main_panel.SetBackgroundColour(BG_COLOR)
         self.id_select_panel = IDSelectPanel(self, self.controller)
-        self.panels = {"id_panel": self.id_select_panel}
+        self.main_menu_panel = MainMenu(self, self.controller)
+        self.panels = {"id_panel": self.id_select_panel, "main menu": self.main_menu_panel}
         for i in self.panels.values():
             self.frame_sizer.Add(i, 1, wx.ALL|wx.EXPAND, 10)
         self.Center()
@@ -57,7 +64,7 @@ class UI(wx.Frame):
         """        
         return input(f"{prompt_text}: ")
     def select_from_list(self, data, message, callback):
-        """makes a combo box for selecting items from a list with a callback"""
+        """passes data to he id selct panel"""
         self.id_select_panel.text.SetLabel(message)
         self.id_select_panel.callback = callback
         for i in data:
@@ -140,9 +147,7 @@ class IDSelectPanel(wx.Panel):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
-        self.SetBackgroundColour(BG_COLOR)
-        self.SetForegroundColour(wx.Colour(70, 130, 180))
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        setup_frame_styling(self)
         self.message, self.data, self.callback = (None, None, None)
         self.text = wx.StaticText(self, label="")
         self.sizer.Add(self.text, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
@@ -164,3 +169,73 @@ class IDSelectPanel(wx.Panel):
             item = self.combo_box.GetClientData(index)
             self.combo_box.Clear()
             self.callback(item)
+class MainMenu(wx.Panel):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        setup_frame_styling(self)
+                # Create title
+        self.title = wx.StaticText(self, label="Main Menu")
+        title_font = self.title.GetFont()
+        title_font.PointSize += 4
+        title_font = title_font.Bold()
+        self.title.SetFont(title_font)
+        self.sizer.Add(self.title, 0, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+        
+        # Create buttons for all menu options
+        self.exit_btn = wx.Button(self, label="Exit")
+        self.change_game_btn = wx.Button(self, label="Change Game")
+        self.change_race_btn = wx.Button(self, label="Change Race")
+        self.change_system_btn = wx.Button(self, label="Change System")
+        self.view_list_btn = wx.Button(self, label="View List")
+        self.edit_filter_btn = wx.Button(self, label="Edit Filter Settings")
+        self.apply_filters_btn = wx.Button(self, label="Apply Filters")
+        self.pin_item_btn = wx.Button(self, label="Pin Item")
+        self.sort_from_pinned_btn = wx.Button(self, label="Sort List from Pinned Item")
+        self.calc_distance_btn = wx.Button(self, label="Calculate Distance Between Pinned Item and Another Item")
+        self.reset_sorting_btn = wx.Button(self, label="Reset List Sorting")
+        self.mineral_search_btn = wx.Button(self, label="Mineral Search")
+        
+        # Add all buttons to sizer
+        buttons = [
+            self.exit_btn,
+            self.change_game_btn,
+            self.change_race_btn,
+            self.change_system_btn,
+            self.view_list_btn,
+            self.edit_filter_btn,
+            self.apply_filters_btn,
+            self.pin_item_btn,
+            self.sort_from_pinned_btn,
+            self.calc_distance_btn,
+            self.reset_sorting_btn,
+            self.mineral_search_btn
+        ]
+        
+        # Create a grid sizer for better layout
+        button_sizer = wx.GridSizer(cols=2, hgap=10, vgap=10)
+        
+        for button in buttons:
+            button_sizer.Add(button, 0, wx.EXPAND)
+        
+        self.sizer.Add(button_sizer, 1, wx.ALL|wx.EXPAND, 20)
+        self.SetSizer(self.sizer)
+        
+        # Bind events directly to controller methods
+        self.exit_btn.Bind(wx.EVT_BUTTON, self.on_exit)  # Special case - needs to close window
+        self.change_game_btn.Bind(wx.EVT_BUTTON, self.controller.handle_change_game)
+        self.change_race_btn.Bind(wx.EVT_BUTTON, self.controller.handle_change_race)
+        self.change_system_btn.Bind(wx.EVT_BUTTON, self.controller.handle_change_system)
+        self.view_list_btn.Bind(wx.EVT_BUTTON, self.controller.handle_view_list)
+        self.edit_filter_btn.Bind(wx.EVT_BUTTON, self.controller.handle_edit_filter_settings)
+        self.apply_filters_btn.Bind(wx.EVT_BUTTON, self.controller.handle_apply_filters)
+        self.pin_item_btn.Bind(wx.EVT_BUTTON, self.controller.handle_pin_item)
+        self.sort_from_pinned_btn.Bind(wx.EVT_BUTTON, self.controller.handle_sort_from_pinned)
+        self.calc_distance_btn.Bind(wx.EVT_BUTTON, self.controller.handle_calc_distance)
+        self.reset_sorting_btn.Bind(wx.EVT_BUTTON, self.controller.handle_reset_sorting)
+        self.mineral_search_btn.Bind(wx.EVT_BUTTON, self.controller.handle_mineral_search)
+        self.title.SetFocus()
+    def on_exit(self, event):
+        # Special case - needs to trigger window close
+        close_event = wx.CloseEvent(wx.wxEVT_CLOSE_WINDOW)
+        self.GetParent().on_close(close_event)
