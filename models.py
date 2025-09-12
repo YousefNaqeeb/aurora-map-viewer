@@ -17,7 +17,7 @@ class BaseSystemObject:
     def __str__(self):
         # String representation with or without miscellaneous data
         if self.miscellaneous_data == "":
-            return f"name: {self.name}"
+            return f"{self.name}"
         return f"{self.name} {self.miscellaneous_data}."
     def __iter__(self):
         #returns a tuple with position data for checking distance etc
@@ -29,8 +29,8 @@ class BaseBody(BaseSystemObject):
     def __str__(self):
         view_minerals =[(mineral, round(data[0]), data[1]) for mineral, data in self.minerals.items() if data[0] > 0]
         if len(view_minerals) > 0:
-            return f"name: {self.name} minerals {view_minerals}"
-        return f"name: {self.name}"
+            return f"{self.name} minerals {view_minerals}"
+        return f" {self.name}"
 # Class for NPR colonies
 @dataclass
 class NPRPop(BaseSystemObject):
@@ -78,4 +78,4 @@ class ProximityObject:
     distance: int
     bearing: int
     def __str__(self):
-        return f"{self.object} distance, {self.distance}km, angle {self.bearing}degrees"
+        return f"{self.object} distance, {self.distance}km, bearing {self.bearing}degrees"
