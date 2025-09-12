@@ -1,6 +1,5 @@
 import wx
 
-
 def setup_frame_styling(frame):
     frame.SetBackgroundColour(wx.Colour(245, 245, 245))
     frame.SetForegroundColour(wx.Colour(70, 130, 180))
@@ -25,9 +24,11 @@ class UI(wx.Frame):
         
         self.SetSizer(self.frame_sizer)
         self.id_select_panel = IDSelectPanel(self, self.controller)
+        self.view_objects_panel = ViewListObjecctsPanel(self, controller)
         self.main_menu_panel = MainMenu(self, self.controller)
-        self.panels = {"id_panel": self.id_select_panel, "main menu": self.main_menu_panel}
-        for i in self.panels.values():
+        
+        self.panels = [self.id_select_panel, self.main_menu_panel, self.view_objects_panel]
+        for i in self.panels:
             self.frame_sizer.Add(i, 1, wx.ALL|wx.EXPAND, 10)
         self.Center()
         self.Show()
@@ -41,7 +42,7 @@ class UI(wx.Frame):
         event.Skip()
     
     def clear_screen(self):
-        for i in self.panels.values():
+        for i in self.panels:
             i.Hide()
     
     def update_status(self, message, is_error = False):
@@ -68,9 +69,8 @@ class UI(wx.Frame):
         self.id_select_panel.SetFocus()
         self.id_select_panel.text.SetLabel(message)
         self.id_select_panel.callback = callback
-        for i in data:
-            index = self.id_select_panel.combo_box.Append(i[1])
-            self.id_select_panel.combo_box.SetClientData(index, i[0])
+        self.id_select_panel.combo_box.Append([i[1] for i in data])
+        self.id_select_panel.combo_box.object_map = {i: index[0] for i, index in enumerate(data)}
         wx.CallAfter(self.id_select_panel.combo_box.SetFocus)
         self.id_select_panel.Show()
         self.id_select_panel.Layout()
@@ -83,39 +83,20 @@ class UI(wx.Frame):
     def show_main_menu(self):
         self.main_menu_panel.Layout()
         self.main_menu_panel.Show()
-        self.main_menu_panel.title.SetFocus()
+        self.main_menu_panel.SetFocus()
 
-    def display_list_system_objects(self, view_list):
-        """this fuction manages displaying the list of system object, currently, it is paged, with 20 items on each page."""
-        page = 0
-        page_start = page * 20
-        page_end = page_start + 20
-        index = page_start
-        while index <= page_end + 1 and index <= len(view_list):
-            page_start, page_end = page * 20, page_start + 20
-            self.update_status(f"{index + 1}, {view_list[index]}")
-            index += 1
-            if index == page_end or index ==len(view_list):
-                while True:
-                    try:
-                        choice = int(self.prompt_for_input("1, go back, 2, continue, 3, return to main menu"))
-                        if choice == 1 and page == 0: #to make sure the user doesn't end up on a negative page
-                            self.update_status("You can't go back at this time.")
-                        elif choice == 1: #go back one page
-                            page -= 1
-                            index -= 20
-                            break
-                        elif choice == 2 and index == len(view_list): #to stop the index from being greater than the amount of elements in the list.
-                            self.update_status("You can't continue at this time.")
-                        elif choice == 2: #next page
-                            page += 1
-                            break
-                        elif choice == 3:
-                            return
-                        else:
-                            self.update_status("invalid option")
-                    except ValueError:
-                        self.update_status("You must enter valid data.")
+    def display_list_system_objects(self, view_list, callback):
+        self.clear_screen()
+        self.view_objects_panel.combo_box.Clear()
+        self.view_objects_panel.callback = callback
+        strs_items =[str(i) for i in view_list]
+        self.view_objects_panel.combo_box.Append(strs_items)
+        self.view_objects_panel.combo_box.object_map = {i: index for i, index in enumerate(view_list)}
+        self.view_objects_panel.combo_box.SetFocus
+        self.view_objects_panel.Show()
+        self.view_objects_panel.Layout()
+        self.view_objects_panel.SetFocus()
+    
     def edit_settings(self, settings):
         self.update_status("current settings:")
         for index, (key, value) in enumerate(settings.items(), start=1):
@@ -151,14 +132,26 @@ class IDSelectPanel(wx.Panel):
         
         self.Center()
         self.Layout()
-        self.submit_btn.Bind(wx.EVT_BUTTON, self.on_select_from_combo)
+        self.submit_btn.Bind(wx.EVT_BUTTON, self.on_select_from_combo)    
         
     def on_select_from_combo(self, event):
         index = self.combo_box.GetSelection()
         if index != wx.NOT_FOUND:
-            item = self.combo_box.GetClientData(index)
+            item = self.combo_box.object_map[index]
             self.combo_box.Clear()
             self.callback(item)
+
+class ViewListObjecctsPanel(IDSelectPanel):
+    def __init__(self, parent, controller):
+        super().__init__(parent, controller)
+        self.controller = controller
+        self.submit_btn.SetLabel("pin item")
+        self.back_btn = wx.Button(self, label="back")
+        self.Sizer.Add(self.back_btn, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+        self.back_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.show_main_menu())
+        self.Layout()
+
+
 class MainMenu(wx.Panel):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -178,9 +171,6 @@ class MainMenu(wx.Panel):
         self.view_list_btn = wx.Button(self, label="View List")
         self.edit_filter_btn = wx.Button(self, label="Edit Filter Settings")
         self.apply_filters_btn = wx.Button(self, label="Apply Filters")
-        self.pin_item_btn = wx.Button(self, label="Pin Item")
-        self.sort_from_pinned_btn = wx.Button(self, label="Sort List from Pinned Item")
-        self.calc_distance_btn = wx.Button(self, label="Calculate Distance Between Pinned Item and Another Item")
         self.reset_sorting_btn = wx.Button(self, label="Reset List Sorting")
         self.mineral_search_btn = wx.Button(self, label="Mineral Search")
         
@@ -192,9 +182,6 @@ class MainMenu(wx.Panel):
             self.view_list_btn,
             self.edit_filter_btn,
             self.apply_filters_btn,
-            self.pin_item_btn,
-            self.sort_from_pinned_btn,
-            self.calc_distance_btn,
             self.reset_sorting_btn,
             self.mineral_search_btn
         ]
@@ -210,14 +197,11 @@ class MainMenu(wx.Panel):
         self.exit_btn.Bind(wx.EVT_BUTTON, self.on_exit)
         self.change_game_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.get_starting_data())
         self.change_race_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.change_race())
-        self.change_system_btn.Bind(wx.EVT_BUTTON, lambda evt: self/controller.change_system())
-        self.view_list_btn.Bind(wx.EVT_BUTTON, self.controller.handle_view_list)
+        self.change_system_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.change_system())
+        self.view_list_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.view_or_pin_list())
         self.edit_filter_btn.Bind(wx.EVT_BUTTON, self.controller.handle_edit_filter_settings)
         self.apply_filters_btn.Bind(wx.EVT_BUTTON, self.controller.handle_apply_filters)
-        self.pin_item_btn.Bind(wx.EVT_BUTTON, self.controller.handle_pin_item)
-        self.sort_from_pinned_btn.Bind(wx.EVT_BUTTON, self.controller.handle_sort_from_pinned)
-        self.calc_distance_btn.Bind(wx.EVT_BUTTON, self.controller.handle_calc_distance)
-        self.reset_sorting_btn.Bind(wx.EVT_BUTTON, self.controller.handle_reset_sorting)
+        self.reset_sorting_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.make_list_default())
         self.mineral_search_btn.Bind(wx.EVT_BUTTON, self.controller.handle_mineral_search)
         self.title.SetFocus()
     def on_exit(self, event):

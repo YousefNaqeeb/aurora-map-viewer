@@ -8,7 +8,7 @@ class AppControler:
     def __init__(self):
         self.db = SQLClass()
         self.settings_manager = SettingsManager()
-        self.ui = ui = UI(None, "Aurora Map Viewer", self, (600, 500))
+        self.ui = UI(None, "Aurora Map Viewer", self, (600, 500))
         self.game_id = None
         self.race_id = None
         self.system_id = None
@@ -54,41 +54,39 @@ class AppControler:
         self.system_id = system_id
         self.Master_object_list = self.db.get_system_data(self.game_id, self.race_id, self.system_name, self.system_id)
         self.make_list_default()
-        self.ui.id_select_panel.Hide()
+        self.show_main_menu()
+    
+    def show_main_menu(self):
+        self.ui.clear_screen()
         self.ui.show_main_menu()
-
     
     def make_list_default(self):
+        self.ui.view_objects_panel.text.SetLabel("")
         self.pinned_object = self.Master_object_list[-1]
         self.view_list = self.Master_object_list
-        self.apply_filters()
         self.sort_from_object()
+        self.apply_filters()
+    
+    def pin_item(self,  object):
+        self.pinned_object = object.object
+        self.sort_from_object()
+        self.view_or_pin_list()
+        self.ui.view_objects_panel.text.SetLabel(f"sorting list from {self.pinned_object.name}")
+        self.ui.view_objects_panel.Layout()
+    
+    def view_or_pin_list(self):
+        self.ui.display_list_system_objects(self.view_list, self.pin_item)
+    
     def toggle_setting(self, key, value):
         value = not value
         self.settings_manager.change_setting(key, value)
     def apply_filters(self):
         self.view_list =[i for i in self.Master_object_list if self.settings_manager.settings[i.object_type]]
         self.sort_from_object()
-    def search_list(self, query):
-        query = query.lower().split()
-        results  = [("placeholder value", 1)]
-        for i in self.Master_object_list:
-            item_words = i.name.lower().split()
-            score = 0
-            for j in query:
-                if j in item_words:
-                    score += 1
-            for item in range(len(results)):
-                try:
-                    if score >= results[item][1]:
-                        results.insert(item, (i, score))
-                except (IndexError, TypeError):
-                    results.append((i, score))
-        del results[-1]
-        results =[i[0] for i in results]
-        return results[:20]
+        
     def find_distance(self, other):
         return round(math.dist(self.pinned_object, other))
+
     def find_bearing(self, item):
         """find angle with atan2, then convert it so 0 degrees is north instead of east"""
         delta_x = item.x - self.pinned_object.x
@@ -132,17 +130,6 @@ class AppControler:
         if self.db.connection != None:
             self.db.close()
             self.ui.Close()
-    def handle_change_race(self, event):
-        """Handle change race button click"""
-        pass
-    
-    def handle_change_system(self, event):
-        """Handle change system button click"""
-        pass
-    
-    def handle_view_list(self, event):
-        """Handle view list button click"""
-        pass
     
     def handle_edit_filter_settings(self, event):
         """Handle edit filter settings button click"""
@@ -150,22 +137,6 @@ class AppControler:
     
     def handle_apply_filters(self, event):
         """Handle apply filters button click"""
-        pass
-    
-    def handle_pin_item(self, event):
-        """Handle pin item button click"""
-        pass
-    
-    def handle_sort_from_pinned(self, event):
-        """Handle sort from pinned button click"""
-        pass
-    
-    def handle_calc_distance(self, event):
-        """Handle calculate distance button click"""
-        pass
-    
-    def handle_reset_sorting(self, event):
-        """Handle reset sorting button click"""
         pass
     
     def handle_mineral_search(self, event):
