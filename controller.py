@@ -76,10 +76,16 @@ class AppControler:
     
     def view_or_pin_list(self):
         self.ui.display_list_system_objects(self.view_list, self.pin_item)
+
+    def get_settings(self):
+        return self.settings_manager.settings
     
     def toggle_setting(self, key, value):
-        value = not value
         self.settings_manager.change_setting(key, value)
+    
+    def show_settings(self):
+        self.ui.show_settings_panel()
+    
     def apply_filters(self):
         self.view_list =[i for i in self.Master_object_list if self.settings_manager.settings[i.object_type]]
         self.sort_from_object()
@@ -130,14 +136,6 @@ class AppControler:
         if self.db.connection != None:
             self.db.close()
             self.ui.Close()
-    
-    def handle_edit_filter_settings(self, event):
-        """Handle edit filter settings button click"""
-        pass
-    
-    def handle_apply_filters(self, event):
-        """Handle apply filters button click"""
-        pass
     
     def handle_mineral_search(self, event):
         """Handle mineral search button click"""

@@ -2,8 +2,9 @@ import wx
 
 def setup_frame_styling(frame):
     frame.SetBackgroundColour(wx.Colour(245, 245, 245))
-    frame.SetForegroundColour(wx.Colour(70, 130, 180))
+    #frame.SetForegroundColour(wx.Colour(70, 130, 180))
     frame.sizer = wx.BoxSizer(wx.VERTICAL)
+    frame.SetSizer(frame.sizer)
 
 
 class UI(wx.Frame):
@@ -20,14 +21,16 @@ class UI(wx.Frame):
         
         self.status_text = wx.StaticText(self.main_panel, label="establishing connection")
         self.main_panel.SetForegroundColour(wx.Colour(70, 130, 180))
-        self.sizer.Add(self.status_text, wx.ALL, 10)
+        self.main_sizer.Add(self.status_text, wx.ALL, 10)
         
         self.SetSizer(self.frame_sizer)
         self.id_select_panel = IDSelectPanel(self, self.controller)
         self.view_objects_panel = ViewListObjecctsPanel(self, controller)
         self.main_menu_panel = MainMenu(self, self.controller)
+        self.settings_panel = FilterSettings(self, controller)
+
         
-        self.panels = [self.id_select_panel, self.main_menu_panel, self.view_objects_panel]
+        self.panels = [self.id_select_panel, self.main_menu_panel, self.view_objects_panel, self.settings_panel]
         for i in self.panels:
             self.frame_sizer.Add(i, 1, wx.ALL|wx.EXPAND, 10)
         self.Center()
@@ -97,18 +100,11 @@ class UI(wx.Frame):
         self.view_objects_panel.Layout()
         self.view_objects_panel.SetFocus()
     
-    def edit_settings(self, settings):
-        self.update_status("current settings:")
-        for index, (key, value) in enumerate(settings.items(), start=1):
-            print(f"{index}, {key}: {value}")
-        while True:
-            try:
-                choice = int(self.prompt_for_input("Enter the number for the setting you would like to change, or 0 for done."))
-                if choice == 0:
-                    return "done"
-                return list(settings)[choice - 1]
-            except (ValueError, TypeError, IndexError):
-                self.update_status("Invalid option.")
+    def show_settings_panel(self):
+        self.clear_screen()
+        self.settings_panel.Layout()
+        self.settings_panel.Show()
+        self.settings_panel.SetFocus()
 
 class IDSelectPanel(wx.Panel):
     """
@@ -128,7 +124,6 @@ class IDSelectPanel(wx.Panel):
         self.combo_box.callback = self.callback
         self.submit_btn  = wx.Button(self, label="submit")
         self.sizer.Add(self.submit_btn, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
-        self.SetSizer(self.sizer)
         
         self.Center()
         self.Layout()
@@ -150,8 +145,37 @@ class ViewListObjecctsPanel(IDSelectPanel):
         self.Sizer.Add(self.back_btn, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
         self.back_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.show_main_menu())
         self.Layout()
-
-
+    
+class FilterSettings(wx.Panel):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        setup_frame_styling(self)
+        self.settings = self.controller.get_settings()
+        self.checkboxes = []
+        for setting, value in self.settings.items():
+            new_checkbox = wx.CheckBox(self, label=setting)
+            new_checkbox.SetValue(value)
+            new_checkbox.Bind(wx.EVT_CHECKBOX, self.on_checkbox_clicked)
+            self.sizer.Add(new_checkbox, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+            self.checkboxes.append(new_checkbox)
+        
+        self.back_btn =wx.Button(self, label="back")
+        self.sizer.Add(self.back_btn, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+        self.back_btn.Bind(wx.EVT_BUTTON, self.on_back)
+        self.Layout
+        
+    def on_checkbox_clicked(self, event):
+        checkbox = event.GetEventObject()
+        key = checkbox.GetLabel()
+        value = checkbox.GetValue()
+        self.controller.toggle_setting(key, value)
+    
+    def on_back(self, event):
+        self.controller.show_main_menu()
+        self.controller.apply_filters()
+        
+            
 class MainMenu(wx.Panel):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -170,7 +194,6 @@ class MainMenu(wx.Panel):
         self.change_system_btn = wx.Button(self, label="Change System")
         self.view_list_btn = wx.Button(self, label="View List")
         self.edit_filter_btn = wx.Button(self, label="Edit Filter Settings")
-        self.apply_filters_btn = wx.Button(self, label="Apply Filters")
         self.reset_sorting_btn = wx.Button(self, label="Reset List Sorting")
         self.mineral_search_btn = wx.Button(self, label="Mineral Search")
         
@@ -181,7 +204,6 @@ class MainMenu(wx.Panel):
             self.change_system_btn,
             self.view_list_btn,
             self.edit_filter_btn,
-            self.apply_filters_btn,
             self.reset_sorting_btn,
             self.mineral_search_btn
         ]
@@ -192,15 +214,13 @@ class MainMenu(wx.Panel):
             button_sizer.Add(button, 0, wx.EXPAND)
         
         self.sizer.Add(button_sizer, 1, wx.ALL|wx.EXPAND, 20)
-        self.SetSizer(self.sizer)
         
         self.exit_btn.Bind(wx.EVT_BUTTON, self.on_exit)
         self.change_game_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.get_starting_data())
         self.change_race_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.change_race())
         self.change_system_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.change_system())
         self.view_list_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.view_or_pin_list())
-        self.edit_filter_btn.Bind(wx.EVT_BUTTON, self.controller.handle_edit_filter_settings)
-        self.apply_filters_btn.Bind(wx.EVT_BUTTON, self.controller.handle_apply_filters)
+        self.edit_filter_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.show_settings())
         self.reset_sorting_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.make_list_default())
         self.mineral_search_btn.Bind(wx.EVT_BUTTON, self.controller.handle_mineral_search)
         self.title.SetFocus()
