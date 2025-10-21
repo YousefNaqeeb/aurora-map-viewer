@@ -139,5 +139,5 @@ class AppControler:
     
     def handle_mineral_search(self, event):
         """Handle mineral search button click"""
-        pass
+        self.ui.show_mineral_search_panel()
             

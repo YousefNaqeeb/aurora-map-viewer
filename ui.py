@@ -1,8 +1,7 @@
 import wx
+import wx.lib.agw.floatspin
 
 def setup_frame_styling(frame):
-    frame.SetBackgroundColour(wx.Colour(245, 245, 245))
-    #frame.SetForegroundColour(wx.Colour(70, 130, 180))
     frame.sizer = wx.BoxSizer(wx.VERTICAL)
     frame.SetSizer(frame.sizer)
 
@@ -25,12 +24,12 @@ class UI(wx.Frame):
         
         self.SetSizer(self.frame_sizer)
         self.id_select_panel = IDSelectPanel(self, self.controller)
-        self.view_objects_panel = ViewListObjecctsPanel(self, controller)
+        self.view_objects_panel = ViewListObjecctsPanel(self, self.controller)
         self.main_menu_panel = MainMenu(self, self.controller)
-        self.settings_panel = FilterSettings(self, controller)
-
+        self.settings_panel = FilterSettings(self, self.controller)
+        self.mineral_search_panel = MineralSearchPanel(self, self.controller)
         
-        self.panels = [self.id_select_panel, self.main_menu_panel, self.view_objects_panel, self.settings_panel]
+        self.panels = [self.id_select_panel, self.main_menu_panel, self.view_objects_panel, self.settings_panel, self.mineral_search_panel]
         for i in self.panels:
             self.frame_sizer.Add(i, 1, wx.ALL|wx.EXPAND, 10)
         self.Center()
@@ -105,6 +104,10 @@ class UI(wx.Frame):
         self.settings_panel.Layout()
         self.settings_panel.Show()
         self.settings_panel.SetFocus()
+    
+    def show_mineral_search_panel(self):
+        self.mineral_search_panel.Show()
+        self.mineral_search_panel.SetFocus()
 
 class IDSelectPanel(wx.Panel):
     """
@@ -175,7 +178,30 @@ class FilterSettings(wx.Panel):
         self.controller.show_main_menu()
         self.controller.apply_filters()
         
-            
+    
+class MineralSearchPanel(wx.Panel):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        setup_frame_styling(self)
+        self.text = wx.StaticText(self, label="Mineral search")
+        self.sizer.Add(self.text, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+
+        LIST_MINERALS =["duranium", "neutronium", "corbomite", "tritanium", "boronide", "mercassium", "vendarite", "sorium", "uridium", "corundium", "gallicite"]
+        for i in LIST_MINERALS:
+            lable = wx.StaticText(self, label=i)
+            amount_spin = wx.SpinCtrl(self, max=2000000000)
+            amount_spin.SetLabel(f"{i} amount")
+            access_spin = wx.lib.agw.floatspin.FloatSpin(self, min_val=0.0, max_val=1.0, increment=0.1, digits=2)
+            access_spin.SetLabel(f"{i} access level")
+            self.Sizer.Add(amount_spin, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+            self.Sizer.Add(access_spin, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+        
+        # Add submit button here later, just check if this is working for now
+        self.Center()
+        self.Layout()
+        
+        
 class MainMenu(wx.Panel):
     def __init__(self, parent, controller):
         super().__init__(parent)
