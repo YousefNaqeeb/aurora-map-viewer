@@ -106,6 +106,7 @@ class UI(wx.Frame):
         self.settings_panel.SetFocus()
     
     def show_mineral_search_panel(self):
+        self.clear_screen()
         self.mineral_search_panel.Show()
         self.mineral_search_panel.SetFocus()
 
@@ -186,7 +187,8 @@ class MineralSearchPanel(wx.Panel):
         setup_frame_styling(self)
         self.text = wx.StaticText(self, label="Mineral search")
         self.sizer.Add(self.text, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
-
+        
+        self.spin_ctrls = []
         LIST_MINERALS =["duranium", "neutronium", "corbomite", "tritanium", "boronide", "mercassium", "vendarite", "sorium", "uridium", "corundium", "gallicite"]
         for i in LIST_MINERALS:
             lable = wx.StaticText(self, label=i)
@@ -194,14 +196,30 @@ class MineralSearchPanel(wx.Panel):
             amount_spin.SetLabel(f"{i} amount")
             access_spin = wx.lib.agw.floatspin.FloatSpin(self, min_val=0.0, max_val=1.0, increment=0.1, digits=2)
             access_spin.SetLabel(f"{i} access level")
+            amount_spin.access_spin = access_spin
             self.Sizer.Add(amount_spin, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
             self.Sizer.Add(access_spin, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+            self.spin_ctrls.append(amount_spin)
         
-        # Add submit button here later, just check if this is working for now
+        self.search_btn = wx.Button(self, label="search")
+        self.Sizer.Add(self.search_btn, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 5)
+        self.search_btn.Bind(wx.EVT_BUTTON, self.on_search)
         self.Center()
         self.Layout()
-        
-        
+    
+    def on_search(self, event):
+        search = []
+        for i in self.spin_ctrls:
+            if i.GetValue() >= 1:
+                amount = i.GetValue()
+                mineral = i.GetLabel().split()[0]
+                access = i.access_spin.GetValue()
+                search.append((mineral, amount, access))
+            else:
+                continue
+        print(search)
+        self.controller.mineral_search(search)
+    
 class MainMenu(wx.Panel):
     def __init__(self, parent, controller):
         super().__init__(parent)

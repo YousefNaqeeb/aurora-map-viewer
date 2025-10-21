@@ -121,8 +121,9 @@ class AppControler:
             score = 0
             for j in search_targets:
                 mineral, amount, access = j
+                print(mineral)
                 object_amount, object_access = i.minerals[mineral]
-                if object_amount >= int(amount) and object_access >= float(access):
+                if object_amount >= amount and object_access >= access:
                     score += object_amount
                     continue
                 else:
@@ -131,7 +132,7 @@ class AppControler:
                 results.append((score, i))
         sorted_results =sorted(results, reverse=True)
         results=[i[1] for i in sorted_results]
-        return results
+        self.ui.display_list_system_objects(results, self.pin_item)
     def handle_closing(self):
         if self.db.connection != None:
             self.db.close()
