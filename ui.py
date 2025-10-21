@@ -56,16 +56,6 @@ class UI(wx.Frame):
         self.Update()
         wx.CallAfter(self.status_text.SetFocus) # Makes sure focus is set so screenreaders read the message
     
-    def prompt_for_input(self, prompt_text): # Fiishin convertig tis ater
-        """gets input from the user"""
-        """
-        self.update_status(prompt_text)
-        self.text_input = wx.TextCtrl(self.content_panel)
-        self.content_panel.GetSizer().Add(self.text_input, wx.ALL|wx.EXPAND, 5)
-        submit_button = wx.Button(self.button_panel, label="submit")
-        self.button_panel.GetSizer().Add(submit_button, wx.ALL|wx.EXPAND, 5)
-        """        
-        return input(f"{prompt_text}: ")
     def select_from_list(self, data, message, callback):
         """passes data to the id select panel"""
         self.id_select_panel.SetFocus()
@@ -77,10 +67,6 @@ class UI(wx.Frame):
         self.id_select_panel.Show()
         self.id_select_panel.Layout()
         self.id_select_panel.SetFocus()
-    
-    def show_multiple_elements(self, data):
-        for index, value in enumerate(data, start=1):
-            self.update_status(f"{index}, {str(value)}")
     
     def show_main_menu(self):
         self.main_menu_panel.Layout()
