@@ -121,7 +121,6 @@ class AppControler:
             score = 0
             for j in search_targets:
                 mineral, amount, access = j
-                print(mineral)
                 object_amount, object_access = i.minerals[mineral]
                 if object_amount >= amount and object_access >= access:
                     score += object_amount

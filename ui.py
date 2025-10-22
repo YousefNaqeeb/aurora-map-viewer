@@ -203,7 +203,6 @@ class MineralSearchPanel(wx.Panel):
                 search.append((mineral, amount, access))
             else:
                 continue
-        print(search)
         self.controller.mineral_search(search)
     
 class MainMenu(wx.Panel):
