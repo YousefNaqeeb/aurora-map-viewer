@@ -67,8 +67,8 @@ class AppControler:
         self.sort_from_object()
         self.apply_filters()
     
-    def pin_item(self,  object):
-        self.pinned_object = object.object
+    def pin_item(self,  item):
+        self.pinned_object = item.object
         self.sort_from_object()
         self.view_or_pin_list()
         self.ui.view_objects_panel.text.SetLabel(f"sorting list from {self.pinned_object.name}")
