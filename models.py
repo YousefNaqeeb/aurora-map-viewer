@@ -57,7 +57,7 @@ class PlayerFleet(BaseSystemObject):
     #detection range = (0.25 * sqrt(Sensor Sensitivity) * sqrt(detected signal strength) * 1000000
     ships: str #list of names of ships in class.
     def __str__(self):
-        return f"Fleet {self.name} with ships {self.ships}, at speed {self.speed}/s, "
+        return f"Fleet {self.name} with ships {self.ships}, at speed {self.speed}km/s, "
 
 @dataclass
 class NonPlayerFleet(BaseSystemObject):
