@@ -24,7 +24,7 @@ class UI(wx.Frame):
         
         self.SetSizer(self.frame_sizer)
         self.id_select_panel = IDSelectPanel(self, self.controller)
-        self.view_objects_panel = ViewListObjecctsPanel(self, self.controller)
+        self.view_objects_panel = ViewListObjectsPanel(self, self.controller)
         self.main_menu_panel = MainMenu(self, self.controller)
         self.settings_panel = FilterSettings(self, self.controller)
         self.mineral_search_panel = MineralSearchPanel(self, self.controller)
@@ -126,7 +126,7 @@ class IDSelectPanel(wx.Panel):
             self.combo_box.Clear()
             self.callback(item)
 
-class ViewListObjecctsPanel(IDSelectPanel):
+class ViewListObjectsPanel(IDSelectPanel):
     def __init__(self, parent, controller):
         super().__init__(parent, controller)
         self.controller = controller
