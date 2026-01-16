@@ -2,7 +2,6 @@ import wx
 from controller import AppControler
 
 def main():
-    """Main function"""
 
     app = wx.App()
     controller = AppControler()

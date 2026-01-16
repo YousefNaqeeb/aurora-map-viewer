@@ -106,7 +106,9 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
         WHERE FCT_Wrecks.gameID = ? and FCT_Wrecks.SystemID = ?""", (game_id, system_id))
         list_system_objects +=[BaseSystemObject(f"Wreck of a {row[1]} class ship", row[2], row[3], "", "wreck") for row in self.cursor.fetchall()]
         #load only uncolonized bodies, to avoid having duplicated objects
-        for row in self.execute("""SELECT FCT_SystemBody.Name, xcor, ycor, PlanetNumber, OrbitNumber,
+        all_planets = {} # For properly naming moons
+        for row in self.execute(
+            """SELECT FCT_SystemBody.Name, xcor, ycor, PlanetNumber, OrbitNumber, BodyClass,
             COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 1 THEN FCT_MineralDeposit.Amount ELSE 0 END), 0) AS Mat1_Amount,
             COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 1 THEN FCT_MineralDeposit.Accessibility ELSE 0 END), 0) AS Mat1_Accessibility,
     COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 2 THEN FCT_MineralDeposit.Amount ELSE 0 END), 0) AS Mat2_Amount,
@@ -134,19 +136,30 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
                                 LEFT JOIN FCT_MineralDeposit ON FCT_MineralDeposit.SystemBodyID = FCT_SystemBodySurveys.SystemBodyID
         WHERE FCT_SystemBody.GameID = ? AND FCT_SystemBody.systemID = ?
         GROUP BY FCT_SystemBody.SystemBodyID""", (game_id, system_id)):
-            if row[0] != "":
+            if row[5] == 1: # Planets
+                if row[0] != "":
+                    name = row[0]
+                else:
+                    name = f"{system_name} {row[3]}"
+                object_type = "planet"
+                all_planets[row[3]] = name
+            elif row[5] == 2: # Moons
+                if row[0] != "":
+                    name = row[0]
+                else:
+                    name = f"{all_planets[row[3]]} moon {row[4]}"
+                object_type = "moon"
+            elif row[5] == 3: # Asteroids
                 name = row[0]
-            elif row[4] == 0:
-                # makes sure all system bodies have a name. this branch makes sure planets are named correctly
-                name = f"{system_name} {row[3]}"
-            else:
-                #this handles moons
-                name = f"{system_name} {row[3]} moon {row[4]}"
+                object_type = "asteroid"
+            elif row[5] == 5:
+                name = row[0]
+                object_type = "comet"
             amounts = row[5::2]
             access = row[6::2]
             unformatted_minerals = zip(LIST_MINERALS, amounts, access)
             minerals ={mineral: (amount, access) for mineral, amount, access in unformatted_minerals}
-            list_system_objects.append(BaseBody(name, row[1], row[2], "", "body", minerals))
+            list_system_objects.append(BaseBody(name, row[1], row[2], "", object_type, minerals))
         # Load colonized bodies not belonging to the player race
         self.cursor.execute("""SELECT EMSignature, ThermalSignature, PopulationName, xcor, ycor FROM FCT_AlienPopulation
                     JOIN FCT_systemBody ON FCT_Population.SystemBodyID = FCT_systemBody .SystemBodyID
