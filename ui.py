@@ -131,8 +131,12 @@ class ViewListObjectsPanel(IDSelectPanel):
         super().__init__(parent, controller)
         self.controller = controller
         self.submit_btn.SetLabel("pin item")
+        self.copy_btn = wx.Button(self, label="copy list")
+        self.copy_btn.combo = self.combo_box
+        self.Sizer.Add(self.copy_btn, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
         self.back_btn = wx.Button(self, label="back")
         self.Sizer.Add(self.back_btn, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+        self.copy_btn.Bind(wx.EVT_BUTTON, self.controller.copy_list)
         self.back_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.show_main_menu())
         self.Layout()
     

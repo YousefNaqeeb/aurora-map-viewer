@@ -1,4 +1,5 @@
 import math
+import pyperclip
 from db_utils import SQLClass
 from ui import UI
 from settings import SettingsManager
@@ -74,6 +75,10 @@ class AppControler:
         self.ui.view_objects_panel.text.SetLabel(f"sorting list from {self.pinned_object.name}")
         self.ui.view_objects_panel.Layout()
     
+    def copy_list(self, event):
+            combobox = event.GetEventObject().combo
+            data = '\n'.join(combobox.GetStrings())
+            pyperclip.copy(data)
     def view_or_pin_list(self):
         self.ui.display_list_system_objects(self.view_list, self.pin_item)
 
