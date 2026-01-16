@@ -23,6 +23,7 @@ class SettingsManager:
                 "fleet": True,
                 "missile_salvo": True,
                 "weapon_contact": True,
+                "lp": True,
                 "star": True}
             return default_settings
     

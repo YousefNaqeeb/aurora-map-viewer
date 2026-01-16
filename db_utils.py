@@ -223,5 +223,12 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
             GROUP BY FCT_MissileSalvo.MissileSalvoID""", (game_id, system_id))]
         #load weapon impact contacts, nuclear and energy weapons
         list_system_objects +=[BaseSystemObject(row[0], row[1], row[2], "", "weapon_contact") for row in self.execute("SELECT ContactName, xcor, ycor FROM FCT_Contacts WHERE ContactType IN (17, 18) AND GameID = ? AND DetectRaceID = ? AND SystemID = ?", (game_id, race_id, system_id))]
+        # load LP's
+        list_system_objects +=[BaseSystemObject(f"lp {num}, {all_planets[row[2]]}", row[0], row[1], '', "lp") for num, row in enumerate(self.execute(
+            """SELECT FCT_LagrangePoint.Xcor, FCT_LagrangePoint.Ycor, FCT_SystemBody.PlanetNumber
+            FROM FCT_LagrangePoint
+            JOIN FCT_SystemBody ON FCT_LagrangePoint.PlanetID = FCT_SystemBody.SystemBodyID
+            WHERE FCT_LagrangePoint.SystemID = ? AND FCT_LagrangePoint.GameID = ?""",
+            (system_id, game_id)), start=1)]
         list_system_objects.append(BaseSystemObject("central star", 0, 0, "", "star"))
         return list_system_objects
