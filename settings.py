@@ -24,6 +24,7 @@ class SettingsManager:
                 "missile_salvo": True,
                 "weapon_contact": True,
                 "lp": True,
+                "wp": True,
                 "star": True}
             return default_settings
     

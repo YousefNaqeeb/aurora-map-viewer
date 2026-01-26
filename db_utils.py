@@ -230,5 +230,20 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
             JOIN FCT_SystemBody ON FCT_LagrangePoint.PlanetID = FCT_SystemBody.SystemBodyID
             WHERE FCT_LagrangePoint.SystemID = ? AND FCT_LagrangePoint.GameID = ?""",
             (system_id, game_id)), start=1)]
+        # Waypoints
+        for row in self.execute("""SELECT Xcor, Ycor, Name, WaypointType, Number
+                                  FROM FCT_Waypoint
+                                  WHERE GameID = ? AND RaceID = ? AND SystemID = ?""", (game_id, race_id, system_id)):
+            if row[3] == 0 and row[2] != "" or row[3] == 6 or row[3] == 10: # These all have names
+                name = row[2]
+            elif row[3] == 0:
+                name = f"waypoint number {row[4]}"
+            elif row[3] == 1:
+                            name = f"point of interest number {row[4]}"
+            elif row[3] == 2:
+                name = f"Urgent POI number {row[4]}"
+            elif row[3] == 8:
+                name = f"temporary wp number {row[4]}"
+            list_system_objects.append(BaseSystemObject(name, row[0], row[1], "", "wp"))
         list_system_objects.append(BaseSystemObject("central star", 0, 0, "", "star"))
         return list_system_objects
