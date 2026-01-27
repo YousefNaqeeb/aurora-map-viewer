@@ -26,6 +26,7 @@ class BaseSystemObject:
 @dataclass
 class BaseBody(BaseSystemObject):
     minerals: dict
+    id: int
     def __str__(self):
         view_minerals =[(mineral, round(data[0]), data[1]) for mineral, data in self.minerals.items() if data[0] > 0]
         if len(view_minerals) > 0:
@@ -48,23 +49,18 @@ class PlayerPop(BaseSystemObject):
     def __str__(self):
         return f"{self.name} Population: {self.population} million"
 
-#class for player fleets
+# Base fleet
 @dataclass
-class PlayerFleet(BaseSystemObject):
-    speed: int #speed of the fleet (in km)
-    em_detecction: int #max EM sensor sensativity
-    th_detection: int #max thermal sensor sensativity
-    #detection range = (0.25 * sqrt(Sensor Sensitivity) * sqrt(detected signal strength) * 1000000
-    ships: str #list of names of ships in class.
-    def __str__(self):
-        return f"Fleet {self.name} with ships {self.ships}, at speed {self.speed}km/s, "
-
-@dataclass
-class NonPlayerFleet(BaseSystemObject):
-    speed: int
+class Fleet(BaseSystemObject):
+    speed: int # km
     ships: str
+    fleet_id: int
+    player_fleet: bool
     def __str__(self):
+        if self.player_fleet:
+            return f"Fleet {self.name} with ships {self.ships}, at speed {self.speed}km/s, "
         return f"NPR fleet with ships {self.ships}, at a speed of {self.speed}KM/s"
+
 @dataclass
 class MissileSalvo(BaseSystemObject):
     speed: int

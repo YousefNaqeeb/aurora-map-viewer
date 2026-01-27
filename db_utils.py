@@ -1,7 +1,7 @@
 import sqlite3
 from math import ceil
 from pathlib import Path
-from models import BaseSystemObject, BaseBody, NPRPop, PlayerPop, PlayerFleet, MissileSalvo, NonPlayerFleet
+from models import BaseSystemObject, BaseBody, NPRPop, PlayerPop, Fleet, MissileSalvo
 class ConnectionFaildError(Exception):
     """error for if the programme attempts to connect to AuroraDB.db wen it is not there"""
 class SQLClass:
@@ -108,7 +108,7 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
         #load only uncolonized bodies, to avoid having duplicated objects
         all_planets = {} # For properly naming moons
         for row in self.execute(
-            """SELECT FCT_SystemBody.Name, xcor, ycor, PlanetNumber, OrbitNumber, BodyClass,
+            """SELECT FCT_SystemBody.Name, xcor, ycor, PlanetNumber, OrbitNumber, BodyClass, FCT_SystemBody.SystemBodyID,
             COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 1 THEN FCT_MineralDeposit.Amount ELSE 0 END), 0) AS Mat1_Amount,
             COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 1 THEN FCT_MineralDeposit.Accessibility ELSE 0 END), 0) AS Mat1_Accessibility,
     COALESCE(MAX(CASE WHEN FCT_MineralDeposit.MaterialID = 2 THEN FCT_MineralDeposit.Amount ELSE 0 END), 0) AS Mat2_Amount,
@@ -159,7 +159,7 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
             access = row[6::2]
             unformatted_minerals = zip(LIST_MINERALS, amounts, access)
             minerals ={mineral: (amount, access) for mineral, amount, access in unformatted_minerals}
-            list_system_objects.append(BaseBody(name, row[1], row[2], "", object_type, minerals))
+            list_system_objects.append(BaseBody(name, row[1], row[2], "", object_type, minerals, row[6]))
         # Load colonized bodies not belonging to the player race
         self.cursor.execute("""SELECT EMSignature, ThermalSignature, PopulationName, xcor, ycor FROM FCT_AlienPopulation
                     JOIN FCT_systemBody ON FCT_Population.SystemBodyID = FCT_systemBody .SystemBodyID
@@ -179,22 +179,16 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
                 dsp_strength = 0
             list_system_objects.append(PlayerPop(row[2], row[3], row[4], "", "colony", dsp_strength, row[1]))
             #load fleet data
-        for row in self.execute("""SELECT FleetID, FleetName, Speed, Xcor, Ycor FROM FCT_Fleet WHERE GameID = ? AND SystemID = ? AND RaceID = ?""", (game_id, system_id, race_id)):
-            #access FCT_Fleet, EMSensorStrength for EM, PassiveSensorStrength for th
-            try: #to handle fleets with ships
-                ships, sensor_data, last_class_id = [], [], 0
-                for i in self.execute("SELECT ShipClassID, ShipName FROM FCT_Ship WHERE FleetID = ?", (row[0],)):
-                    ships.append(i[1])
-                    new_class_id= i[0]
-                    if last_class_id != new_class_id:
-                        #makes sure no data is duplicated
-                        last_class_id = new_class_id
-                        sensor_data.append(self.execute("SELECT EMSensorStrength, PassiveSensorStrength  FROM FCT_ShipClass WHERE ShipClassID = ?", (new_class_id,))[0])
-                em = max(item[0] for item in sensor_data)
-                th = max(item[1] for item in sensor_data)
-                list_system_objects.append(PlayerFleet(row[1], row[3], row[4], "", "fleet", row[2], em, th, f"{', '.join(ships)}"))
-            except (ValueError, IndexError): #to handle fleets with no ships
-                list_system_objects.append(PlayerFleet(row[1], row[3], row[4], "", "fleet", 0, 0, 0, "no ships in fleet"))
+        for row in self.execute("""SELECT FCT_Fleet.FleetID, FleetName, Speed, Xcor, Ycor,
+                                GROUP_CONCAT(ShipName, ', ') as ShipNames
+                                FROM FCT_Fleet
+                                JOIN FCT_Ship ON FCT_Fleet.FleetID = FCT_Ship.FleetID
+                                WHERE FCT_Fleet.GameID = ? AND FCT_Fleet.SystemID = ? AND FCT_Fleet.RaceID = ?
+                                GROUP BY FCT_Fleet.FleetID""", (game_id, system_id, race_id)):
+            if row[5] == None:
+                list_system_objects.append(Fleet(row[1], row[3], row[4], "", "fleet", row[2], "empty fleet", row[0], True))
+            else:
+                list_system_objects.append(Fleet(row[1], row[3], row[4], "", "fleet", row[2], row[5], row[0], True))
         #load player missiles
         list_system_objects +=[MissileSalvo(f"Missile Salvo of {row[6]} missiles", row[3], row[4], "", "missile_salvo", row[5], row[7]) for row in self.execute("""SELECT MissileSalvoID, TargetType, TargetID, xcor, ycor, MissileSpeed, Name,
                                     COUNT(FCT_Missile.SalvoID) as MissileCount
@@ -204,7 +198,7 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
             WHERE FCT_MissileSalvo.GameID = ? AND FCT_MissileSalvo.RaceID = ? AND FCT_MissileSalvo.SystemID = ?
             GROUP BY FCT_MissileSalvo.MissileSalvoID""", (game_id, race_id, system_id))]
         #load non player fleets
-        list_system_objects +=[NonPlayerFleet("", row[0], row[1], "", "fleet", row[2], row[-1]) for row in self.execute("""SELECT FCT_Fleet.Xcor, FCT_Fleet.Ycor, FCT_Fleet.speed, FCT_Fleet.FleetID,
+        list_system_objects +=[Fleet("", row[0], row[1], "", "fleet", row[2], row[-1], row[3], False) for row in self.execute("""SELECT FCT_Fleet.Xcor, FCT_Fleet.Ycor, FCT_Fleet.speed, FCT_Fleet.FleetID,
         GROUP_CONCAT(ShipID) as ShipIDs,
         GROUP_CONCAT(ContactName, ', ') as ShipNames
         FROM FCT_Fleet
