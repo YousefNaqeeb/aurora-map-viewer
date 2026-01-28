@@ -71,7 +71,7 @@ class AppControler:
     def pin_item(self,  item):
         self.pinned_object = item.object
         self.sort_from_object()
-        self.view_or_pin_list()
+        self.view_list_objects()
         self.ui.view_objects_panel.text.SetLabel(f"sorting list from {self.pinned_object.name}")
         self.ui.view_objects_panel.Layout()
     
@@ -79,7 +79,7 @@ class AppControler:
             combobox = event.GetEventObject().combo
             data = '\n'.join(combobox.GetStrings())
             pyperclip.copy(data)
-    def view_or_pin_list(self):
+    def view_list_objects(self):
         self.ui.display_list_system_objects(self.view_list, self.pin_item)
 
     def get_settings(self):
@@ -88,6 +88,9 @@ class AppControler:
     def toggle_setting(self, key, value):
         self.settings_manager.change_setting(key, value)
     
+    def show_wp_panel(self):
+        self.ui.show_wp_panel()
+        
     def show_settings(self):
         self.ui.show_settings_panel()
     

@@ -23,13 +23,14 @@ class UI(wx.Frame):
         self.main_sizer.Add(self.status_text, wx.ALL, 10)
         
         self.SetSizer(self.frame_sizer)
-        self.id_select_panel = IDSelectPanel(self, self.controller)
+        self.base_select_panel = BaseSelectPanel(self, self.controller)
         self.view_objects_panel = ViewListObjectsPanel(self, self.controller)
         self.main_menu_panel = MainMenu(self, self.controller)
         self.settings_panel = FilterSettings(self, self.controller)
         self.mineral_search_panel = MineralSearchPanel(self, self.controller)
+        self.create_wp_panel = WPCreationPanel(self, self.controller)
         
-        self.panels = [self.id_select_panel, self.main_menu_panel, self.view_objects_panel, self.settings_panel, self.mineral_search_panel]
+        self.panels = [self.base_select_panel, self.main_menu_panel, self.view_objects_panel, self.settings_panel, self.mineral_search_panel]
         for i in self.panels:
             self.frame_sizer.Add(i, 1, wx.ALL|wx.EXPAND, 10)
         self.Center()
@@ -58,15 +59,15 @@ class UI(wx.Frame):
     
     def select_from_list(self, data, message, callback):
         """passes data to the id select panel"""
-        self.id_select_panel.SetFocus()
-        self.id_select_panel.text.SetLabel(message)
-        self.id_select_panel.callback = callback
-        self.id_select_panel.combo_box.Append([i[1] for i in data])
-        self.id_select_panel.combo_box.object_map = {i: index[0] for i, index in enumerate(data)}
-        wx.CallAfter(self.id_select_panel.combo_box.SetFocus)
-        self.id_select_panel.Show()
-        self.id_select_panel.Layout()
-        self.id_select_panel.SetFocus()
+        self.base_select_panel.SetFocus()
+        self.base_select_panel.text.SetLabel(message)
+        self.base_select_panel.callback = callback
+        self.base_select_panel.combo_box.Append([i[1] for i in data])
+        self.base_select_panel.combo_box.object_map = {i: index[0] for i, index in enumerate(data)}
+        wx.CallAfter(self.base_select_panel.combo_box.SetFocus)
+        self.base_select_panel.Show()
+        self.base_select_panel.Layout()
+        self.base_select_panel.SetFocus()
     
     def show_main_menu(self):
         self.main_menu_panel.Layout()
@@ -85,6 +86,11 @@ class UI(wx.Frame):
         self.view_objects_panel.Layout()
         self.view_objects_panel.SetFocus()
     
+    def show_wp_panel(self):
+        self.clear_screen()
+        self.create_wp_panel.Show()
+        self.create_wp_panel.SetFocus()
+        
     def show_settings_panel(self):
         self.clear_screen()
         self.settings_panel.Layout()
@@ -96,7 +102,7 @@ class UI(wx.Frame):
         self.mineral_search_panel.Show()
         self.mineral_search_panel.SetFocus()
 
-class IDSelectPanel(wx.Panel):
+class BaseSelectPanel(wx.Panel):
     """
     class with combo box and button for submitting. for giving user options with tuples where one option is the ID
     will return ID to controller from the on event
@@ -126,20 +132,87 @@ class IDSelectPanel(wx.Panel):
             self.combo_box.Clear()
             self.callback(item)
 
-class ViewListObjectsPanel(IDSelectPanel):
+class ViewListObjectsPanel(BaseSelectPanel):
     def __init__(self, parent, controller):
         super().__init__(parent, controller)
         self.controller = controller
         self.submit_btn.SetLabel("pin item")
+        self.add_wp_btn = wx.Button(self, label="add WP")
+        self.Sizer.Add(self.add_wp_btn, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
         self.copy_btn = wx.Button(self, label="copy list")
         self.copy_btn.combo = self.combo_box
         self.Sizer.Add(self.copy_btn, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
         self.back_btn = wx.Button(self, label="back")
         self.Sizer.Add(self.back_btn, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+        self.add_wp_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.show_wp_panel())
         self.copy_btn.Bind(wx.EVT_BUTTON, self.controller.copy_list)
         self.back_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.show_main_menu())
         self.Layout()
     
+class WPCreationPanel(BaseSelectPanel):
+    def __init__(self, parent, controller):
+        super().__init__(parent, controller)
+        self.controller = controller
+        
+        self.combo_box.Append([
+            "normal wp",
+            "named WP",
+            "Rendezvous WP",
+            "Point of Interest",
+            "Urgent POI",
+            "Temporary WP",
+            "fleet WP"
+        ])
+        
+        self.combo_box.SetLabel("Select WP type")
+        self.visibility_config = {
+            0: (["name_field"], ["x_spin", "y_spin", "checkbox"]),
+            1: ([], ["name_field", "x_spin", "y_spin", "checkbox"]),
+            2: ([], ["name_field", "x_spin", "y_spin", "checkbox"]),
+            3: (["name_field"], ["x_spin","y_spin", "checkbox"]),
+            4: (["name_field"], ["x_spin", "y_spin", "checkbox"]),
+            5: (["name_field"], ["x_spin", "y_spin", "checkbox"]),
+            6: (["name_field", "x_spin", "y_spin", "checkbox"], []),
+        }
+        name_field = wx.TextCtrl(self)
+        name_field.SetLabel("Enter A name for the Waypoint")
+        self.Sizer.Add(name_field, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+        x_spin = wx.SpinCtrlDouble(self, max=1000000000000)
+        x_spin.SetLabel('x')
+        self.Sizer.Add(x_spin, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+        y_spin = wx.SpinCtrlDouble(self, max=1000000000000)
+        y_spin.SetLabel('y')
+        self.Sizer.Add(y_spin, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+        attach_to_body_checkbox = wx.CheckBox(self, label="Attach to body")
+        self.Sizer.Add(attach_to_body_checkbox, wx.ALL|wx.ALIGN_CENTRE_HORIZONTAL, 15)
+        self.submit_btn.MoveAfterInTabOrder(attach_to_body_checkbox)
+        self.back_btn = wx.Button(self, label="back")
+        self.Sizer.Add(self.back_btn, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+        
+        self.wp_widgets = {
+            "name_field": name_field,
+            "x_spin": x_spin,
+            "y_spin": y_spin,
+            "checkbox": attach_to_body_checkbox
+        }
+        self.Layout()
+        
+        self.change_ui((["name_field", "x_spin", "y_spin", "checkbox"], []))
+        self.combo_box.Bind(wx.EVT_COMBOBOX, self.on_select_from_combo)
+        self.back_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.view_list_objects())
+    
+    def change_ui(self, items):
+        """Set what things should be shown or hidden"""
+        for i in items[0]:
+            self.wp_widgets[i].Hide()
+        for i in items[1]:
+            self.wp_widgets[i].Show()
+    
+    def on_select_from_combo(self, event):
+        selected_item = self.combo_box.GetSelection()
+        ui_state = self.visibility_config[selected_item]
+        self.change_ui(ui_state)
+
 class FilterSettings(wx.Panel):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -252,7 +325,7 @@ class MainMenu(wx.Panel):
         self.change_game_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.get_starting_data())
         self.change_race_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.change_race())
         self.change_system_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.change_system())
-        self.view_list_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.view_or_pin_list())
+        self.view_list_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.view_list_objects())
         self.edit_filter_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.show_settings())
         self.reset_sorting_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.make_list_default())
         self.mineral_search_btn.Bind(wx.EVT_BUTTON, self.controller.handle_mineral_search)
