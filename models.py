@@ -24,17 +24,21 @@ class BaseSystemObject:
         return iter((self.x, self.y))
 
 @dataclass
-class BaseBody(BaseSystemObject):
-    minerals: dict
+class BaseSystemObjectWithID(BaseSystemObject):
     id: int
+    
+@dataclass
+class BaseBody(BaseSystemObjectWithID):
+    minerals: dict
     def __str__(self):
         view_minerals =[(mineral, round(data[0]), data[1]) for mineral, data in self.minerals.items() if data[0] > 0]
         if len(view_minerals) > 0:
             return f"{self.name} minerals {view_minerals}"
         return f" {self.name}"
+
 # Class for NPR colonies
 @dataclass
-class NPRPop(BaseSystemObject):
+class NPRPop(BaseSystemObjectWithID):
     em: int ## Electromagnetic signature
     th: int # Thermal signature
     def __str__(self):
@@ -43,18 +47,16 @@ class NPRPop(BaseSystemObject):
 
 # Class for player populations with detection strength and population size
 @dataclass
-class PlayerPop(BaseSystemObject):
-    dsp_strength: int #Deep space tracking station strength
+class PlayerPop(BaseSystemObjectWithID):
     population: float #Population in millions
     def __str__(self):
         return f"{self.name} Population: {self.population} million"
 
 # Base fleet
 @dataclass
-class Fleet(BaseSystemObject):
+class Fleet(BaseSystemObjectWithID):
     speed: int # km
     ships: str
-    fleet_id: int
     player_fleet: bool
     def __str__(self):
         if self.player_fleet:

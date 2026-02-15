@@ -159,25 +159,20 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
             access = row[6::2]
             unformatted_minerals = zip(LIST_MINERALS, amounts, access)
             minerals ={mineral: (amount, access) for mineral, amount, access in unformatted_minerals}
-            list_system_objects.append(BaseBody(name, row[1], row[2], "", object_type, minerals, row[6]))
+            list_system_objects.append(BaseBody(name, row[1], row[2], "", object_type, row[6], minerals))
         # Load colonized bodies not belonging to the player race
-        self.cursor.execute("""SELECT EMSignature, ThermalSignature, PopulationName, xcor, ycor FROM FCT_AlienPopulation
+        self.cursor.execute("""SELECT EMSignature, ThermalSignature, PopulationName, xcor, ycor, FCT_Population.SystemBodyID
+                            FROM FCT_AlienPopulation
                     JOIN FCT_systemBody ON FCT_Population.SystemBodyID = FCT_systemBody .SystemBodyID
                     JOIN FCT_Population ON FCT_AlienPopulation.PopulationID = FCT_Population.PopulationID
                     WHERE FCT_AlienPopulation.gameID = ? and ViewingRaceID = ? AND FCT_Population.SystemID = ?""", (game_id, race_id, system_id))
-        list_system_objects +=[NPRPop(row[2], row[3], row[4], "", "colony", row[0], row[1]) for row in self.cursor.fetchall()]
+        list_system_objects +=[NPRPop(row[2], row[3], row[4], "", "colony", row[5], row[0], row[1]) for row in self.cursor.fetchall()]
         # Load colonized bodies belonging to the player
-        for row in self.execute("""SELECT  PopulationID, Population, PopName, FCT_SystemBody.Xcor, FCT_SystemBody.Ycor FROM FCT_Population
+        for row in self.execute("""SELECT  PopulationID, Population, PopName, FCT_SystemBody.Xcor, FCT_SystemBody.Ycor, FCT_Population.SystemBodyID
+                                FROM FCT_Population
         JOIN FCT_SystemBody ON FCT_Population.SystemBodyID = FCT_SystemBody.SystemBodyID
         WHERE FCT_Population.GameID = ? AND FCT_Population.RaceID = ? AND FCT_Population.SystemID = ?""", (game_id, race_id, system_id,)):
-            try:
-                # Get tracking station info (DSP = Deep Space Tracking station)
-                dsp_amount =self.execute("SELECT Amount FROM FCT_PopulationInstallations WHERE GameID = ? AND PopID = ? AND PlanetaryInstallationID = 11", (game_id, row[0],))[0]
-                dsp_strength = self.execute("SELECT PlanetarySensorStrength FROM FCT_Race WHERE RaceID = ? AND GameID = ?", (race_id, game_id))[0][0]
-                dsp_strength *= dsp_amount # Calculate total tracking strength
-            except Exception:
-                dsp_strength = 0
-            list_system_objects.append(PlayerPop(row[2], row[3], row[4], "", "colony", dsp_strength, row[1]))
+            list_system_objects.append(PlayerPop(row[2], row[3], row[4], "", "colony", row[5], row[1]))
             #load fleet data
         for row in self.execute("""SELECT FCT_Fleet.FleetID, FleetName, Speed, Xcor, Ycor,
                                 GROUP_CONCAT(ShipName, ', ') as ShipNames
