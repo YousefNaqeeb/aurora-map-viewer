@@ -88,8 +88,8 @@ class AppControler:
     def toggle_setting(self, key, value):
         self.settings_manager.change_setting(key, value)
     
-    def show_wp_panel(self):
-        self.ui.show_wp_panel()
+    def show_wp_panel(self, item):
+        self.ui.show_wp_panel   (item)
         
     def show_settings(self):
         self.ui.show_settings_panel()

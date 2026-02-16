@@ -85,9 +85,35 @@ class UI(wx.Frame):
         self.view_objects_panel.Show()
         self.view_objects_panel.Layout()
         self.view_objects_panel.SetFocus()
-    
-    def show_wp_panel(self):
+
+    def show_wp_panel(self, item):
         self.clear_screen()
+        self.create_wp_panel.item = item
+        
+        wp_options = [
+            "normal wp",
+            "named WP",
+            "Rendezvous WP",
+            "Point of Interest",
+            "Urgent POI",
+            "Temporary WP",
+            "fleet WP"
+        ]
+        
+        self.create_wp_panel.combo_box.Clear()
+        
+        if item.object.object_type == "fleet":
+            self.create_wp_panel.combo_box.Append(wp_options)
+        else:
+            self.create_wp_panel.combo_box.Append(wp_options[:-1])
+
+        self.create_wp_panel.x_spin.SetValue(item.object.x)
+        self.create_wp_panel.y_spin.SetValue(item.object.y)
+        
+        if item.object.object_type in ("planet", "asteroid", "comet", "moon", "colony", "fleet"):
+            self.create_wp_panel.attach_to_body_checkbox.Enable(True)
+        else:
+            self.create_wp_panel.attach_to_body_checkbox.Enable(False)
         self.create_wp_panel.Show()
         self.create_wp_panel.SetFocus()
         
@@ -144,16 +170,21 @@ class ViewListObjectsPanel(BaseSelectPanel):
         self.Sizer.Add(self.copy_btn, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
         self.back_btn = wx.Button(self, label="back")
         self.Sizer.Add(self.back_btn, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
-        self.add_wp_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.show_wp_panel())
+        self.add_wp_btn.Bind(wx.EVT_BUTTON, self.on_add_wp_btn)
         self.copy_btn.Bind(wx.EVT_BUTTON, self.controller.copy_list)
         self.back_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.show_main_menu())
         self.Layout()
+    
+    def on_add_wp_btn(self, event):
+        self.callback = self.controller.show_wp_panel
+        self.on_select_from_combo(event)
     
 class WPCreationPanel(BaseSelectPanel):
     def __init__(self, parent, controller):
         super().__init__(parent, controller)
         self.controller = controller
         
+        self.item = None
         self.combo_box.Append([
             "normal wp",
             "named WP",
@@ -174,26 +205,26 @@ class WPCreationPanel(BaseSelectPanel):
             5: (["name_field"], ["x_spin", "y_spin", "checkbox"]),
             6: (["name_field", "x_spin", "y_spin", "checkbox"], []),
         }
-        name_field = wx.TextCtrl(self)
-        name_field.SetLabel("Enter A name for the Waypoint")
-        self.Sizer.Add(name_field, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
-        x_spin = wx.SpinCtrlDouble(self, max=1000000000000)
-        x_spin.SetLabel('x')
-        self.Sizer.Add(x_spin, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
-        y_spin = wx.SpinCtrlDouble(self, max=1000000000000)
-        y_spin.SetLabel('y')
-        self.Sizer.Add(y_spin, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
-        attach_to_body_checkbox = wx.CheckBox(self, label="Attach to body")
-        self.Sizer.Add(attach_to_body_checkbox, wx.ALL|wx.ALIGN_CENTRE_HORIZONTAL, 15)
-        self.submit_btn.MoveAfterInTabOrder(attach_to_body_checkbox)
+        self.name_field = wx.TextCtrl(self)
+        self.name_field.SetLabel("Enter A name for the Waypoint")
+        self.Sizer.Add(self.name_field, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+        self.x_spin = wx.SpinCtrlDouble(self, max=1000000000000)
+        self.x_spin.SetLabel('x')
+        self.Sizer.Add(self.x_spin, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+        self.y_spin = wx.SpinCtrlDouble(self, max=1000000000000)
+        self.y_spin.SetLabel('y')
+        self.Sizer.Add(self.y_spin, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
+        self.attach_to_body_checkbox = wx.CheckBox(self, label="Attach to body")
+        self.Sizer.Add(self.attach_to_body_checkbox, wx.ALL|wx.ALIGN_CENTRE_HORIZONTAL, 15)
+        self.submit_btn.MoveAfterInTabOrder(self.attach_to_body_checkbox)
         self.back_btn = wx.Button(self, label="back")
         self.Sizer.Add(self.back_btn, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 15)
-        
+
         self.wp_widgets = {
-            "name_field": name_field,
-            "x_spin": x_spin,
-            "y_spin": y_spin,
-            "checkbox": attach_to_body_checkbox
+            "name_field": self.name_field,
+            "x_spin": self.x_spin,
+            "y_spin": self.y_spin,
+            "checkbox": self.attach_to_body_checkbox
         }
         self.Layout()
         
