@@ -185,15 +185,6 @@ class WPCreationPanel(BaseSelectPanel):
         self.controller = controller
         
         self.item = None
-        self.combo_box.Append([
-            "normal wp",
-            "named WP",
-            "Rendezvous WP",
-            "Point of Interest",
-            "Urgent POI",
-            "Temporary WP",
-            "fleet WP"
-        ])
         
         self.combo_box.SetLabel("Select WP type")
         self.visibility_config = {
