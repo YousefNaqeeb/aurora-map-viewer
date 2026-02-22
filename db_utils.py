@@ -106,7 +106,7 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
         JOIN FCT_ShipClass ON FCT_Wrecks.ClassID = FCT_ShipClass.ShipClassID
         WHERE FCT_Wrecks.gameID = ? and FCT_Wrecks.SystemID = ?""", (game_id, system_id))
         list_system_objects +=[BaseSystemObject(f"Wreck of a {row[1]} class ship", row[2], row[3], "", "wreck") for row in self.cursor.fetchall()]
-        #load only uncolonized bodies, to avoid having duplicated objects
+
         all_planets = {} # For properly naming moons
         for row in self.execute(
             """SELECT FCT_SystemBody.Name, xcor, ycor, PlanetNumber, OrbitNumber, BodyClass, FCT_SystemBody.SystemBodyID,
@@ -156,8 +156,8 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
             elif row[5] == 5:
                 name = row[0]
                 object_type = "comet"
-            amounts = row[5::2]
-            access = row[6::2]
+            amounts = row[7::2]
+            access = row[8::2]
             unformatted_minerals = zip(LIST_MINERALS, amounts, access)
             minerals ={mineral: (amount, access) for mineral, amount, access in unformatted_minerals}
             list_system_objects.append(BaseBody(name, row[1], row[2], "", object_type, row[6], minerals))
