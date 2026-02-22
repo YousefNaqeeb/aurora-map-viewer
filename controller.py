@@ -148,4 +148,22 @@ class AppControler:
     def handle_mineral_search(self, event):
         """Handle mineral search button click"""
         self.ui.show_mineral_search_panel()
-            
+
+    def add_wp(self, x, y, wp_type, name, follow_id):
+        wp_ids = self.db.get_wp_ids(self.game_id, self.race_id)
+        ids = [i[0] for i in wp_ids]
+        for i in range(1, 999): # The WaypointID can't be duplicated or larger than 999, but order doesn't matter, so checking starting from 1 should give a valid wp id
+            if i in ids:
+                continue
+            else:
+                wp_id = i
+                break
+        wp_num = max([i[1] for i in wp_ids], default=0) + 1
+        creation_time = self.db.get_game_time(self.game_id)[0][0]
+        if wp_type == 10:
+            fleet_id = follow_id
+            follow_id = 0
+        else:
+            fleet_id = 0
+        columns = (wp_id, self.game_id, self.race_id, self.system_id, follow_id, creation_time, x, y, wp_num, wp_type, name, 0, fleet_id)
+        self.db.add_wp(columns)

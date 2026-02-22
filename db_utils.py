@@ -53,6 +53,7 @@ DROP INDEX IF EXISTS idx_mod_shipclass_pk_lookup;
 DROP INDEX IF EXISTS idx_mod_wrecks_lookup;
 DROP INDEX IF EXISTS idx_mod_lifepods_lookup;
 DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
+        self.connection.commit()
         self.connection.close()
         self.connection = None
         self.cursor = None
@@ -236,3 +237,17 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
             list_system_objects.append(BaseSystemObject(name, row[0], row[1], "", "wp"))
         list_system_objects.append(BaseSystemObject("central star", 0, 0, "", "star"))
         return list_system_objects
+    
+    def get_wp_ids(self, game_id, race_id):
+        return self.execute("""SELECT WaypointID, Number
+                                   FROM FCT_Waypoint
+                                   WHERE GameID = ? AND RaceID = ?""", (game_id, race_id))
+    
+    def get_game_time(self, game_id):
+        return self.execute("SELECT GameTime FROM FCT_Game WHERE GameID = ?", (game_id,))
+    
+    def add_wp(self, colomns):
+        self.cursor.execute("""INSERT INTO FCT_Waypoint (WaypointID, GameID, RaceID, SystemID, OrbitBodyID, CreationTime, Xcor, Ycor, Number, WaypointType, Name, JumpPointID, FleetID)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", colomns)
+        self.connection.commit()
+

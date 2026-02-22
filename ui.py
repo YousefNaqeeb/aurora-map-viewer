@@ -89,6 +89,7 @@ class UI(wx.Frame):
     def show_wp_panel(self, item):
         self.clear_screen()
         self.create_wp_panel.item = item
+        self.create_wp_panel.attach_to_body_checkbox.SetValue(False)
         
         wp_options = [
             "normal wp",
@@ -102,7 +103,7 @@ class UI(wx.Frame):
         
         self.create_wp_panel.combo_box.Clear()
         
-        if item.object.object_type == "fleet":
+        if item.object.object_type == "fleet" and item.object.player_fleet:
             self.create_wp_panel.combo_box.Append(wp_options)
         else:
             self.create_wp_panel.combo_box.Append(wp_options[:-1])
@@ -114,6 +115,9 @@ class UI(wx.Frame):
             self.create_wp_panel.attach_to_body_checkbox.Enable(True)
         else:
             self.create_wp_panel.attach_to_body_checkbox.Enable(False)
+        
+        self.create_wp_panel.submit_btn.Disable()
+        
         self.create_wp_panel.Show()
         self.create_wp_panel.SetFocus()
         
@@ -222,6 +226,7 @@ class WPCreationPanel(BaseSelectPanel):
         self.change_ui((["name_field", "x_spin", "y_spin", "checkbox"], []))
         self.combo_box.Bind(wx.EVT_COMBOBOX, self.on_select_from_combo)
         self.back_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.view_list_objects())
+        self.submit_btn.Bind(wx.EVT_BUTTON, self.on_submit)
     
     def change_ui(self, items):
         """Set what things should be shown or hidden"""
@@ -234,6 +239,35 @@ class WPCreationPanel(BaseSelectPanel):
         selected_item = self.combo_box.GetSelection()
         ui_state = self.visibility_config[selected_item]
         self.change_ui(ui_state)
+        self.submit_btn.Enable(True)
+
+    def on_submit(self, event):
+        wp_type_map = {
+    0: 0,   # normal wp
+    1: 0,   # named WP
+    2: 6,   # rendezvous WP
+    3: 1,   # Point of Interest
+    4: 2,   # Urgent POI
+    5: 8,   # Temporary WP
+    6: 10,  # fleet WP
+}
+        selection= self.combo_box.GetSelection()
+        if self.attach_to_body_checkbox.GetValue() or self.combo_box.GetSelection() == 6:
+            x, y = (self.item.object.x, self.item.object.y)
+            follow_id = self.item.object.id
+        else:
+            x, y = (self.x_spin.GetValue(), self.y_spin.GetValue())
+            follow_id = 0
+        wp_type = wp_type_map[selection]
+        if selection ==6:
+            name = self.item.object.name + " Waypoint"
+        elif selection in (1, 2):
+            name = self.name_field.GetValue()
+        else:
+            name = None
+    
+        self.controller.add_wp(x, y, wp_type, name,follow_id)
+        
 
 class FilterSettings(wx.Panel):
     def __init__(self, parent, controller):
