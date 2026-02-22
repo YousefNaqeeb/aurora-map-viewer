@@ -10,9 +10,9 @@ class BaseSystemObject:
     object_type: str #contains exactly what an object is, for example, lifepod, missile salvo for filtering.
     def __post_init__(self):
         #makes sure all fields are correct
-        if type(self.x) == float:
+        if isinstance(self.x, float):
             self.x = round(self.x)
-        if type(self.y) == float:
+        if isinstance(self.y, float):
             self.y = round(self.y)
     def __str__(self):
         # String representation with or without miscellaneous data
@@ -26,7 +26,7 @@ class BaseSystemObject:
 @dataclass
 class BaseSystemObjectWithID(BaseSystemObject):
     id: int
-    
+
 @dataclass
 class BaseBody(BaseSystemObjectWithID):
     minerals: dict

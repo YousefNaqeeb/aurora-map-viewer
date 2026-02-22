@@ -181,7 +181,7 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
                                 JOIN FCT_Ship ON FCT_Fleet.FleetID = FCT_Ship.FleetID
                                 WHERE FCT_Fleet.GameID = ? AND FCT_Fleet.SystemID = ? AND FCT_Fleet.RaceID = ?
                                 GROUP BY FCT_Fleet.FleetID""", (game_id, system_id, race_id)):
-            if row[5] == None:
+            if row[5] is None:
                 list_system_objects.append(Fleet(row[1], row[3], row[4], "", "fleet", row[2], "empty fleet", row[0], True))
             else:
                 list_system_objects.append(Fleet(row[1], row[3], row[4], "", "fleet", row[2], row[5], row[0], True))
@@ -229,7 +229,7 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
             elif row[3] == 0:
                 name = f"waypoint number {row[4]}"
             elif row[3] == 1:
-                            name = f"point of interest number {row[4]}"
+                name = f"point of interest number {row[4]}"
             elif row[3] == 2:
                 name = f"Urgent POI number {row[4]}"
             elif row[3] == 8:
@@ -237,17 +237,16 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
             list_system_objects.append(BaseSystemObject(name, row[0], row[1], "", "wp"))
         list_system_objects.append(BaseSystemObject("central star", 0, 0, "", "star"))
         return list_system_objects
-    
+
     def get_wp_ids(self, game_id, race_id):
         return self.execute("""SELECT WaypointID, Number
                                    FROM FCT_Waypoint
                                    WHERE GameID = ? AND RaceID = ?""", (game_id, race_id))
-    
+
     def get_game_time(self, game_id):
         return self.execute("SELECT GameTime FROM FCT_Game WHERE GameID = ?", (game_id,))
-    
+
     def add_wp(self, colomns):
         self.cursor.execute("""INSERT INTO FCT_Waypoint (WaypointID, GameID, RaceID, SystemID, OrbitBodyID, CreationTime, Xcor, Ycor, Number, WaypointType, Name, JumpPointID, FleetID)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", colomns)
         self.connection.commit()
-

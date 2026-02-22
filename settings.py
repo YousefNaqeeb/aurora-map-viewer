@@ -27,7 +27,7 @@ class SettingsManager:
                 "wp": True,
                 "star": True}
             return default_settings
-    
+
     def save_settings(self):
         """Saves settings to settings.json"""
         with open("settings.json", mode="w", encoding="utf-8") as write_file:

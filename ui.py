@@ -80,7 +80,7 @@ class UI(wx.Frame):
         self.view_objects_panel.callback = callback
         strs_items =[str(i) for i in view_list]
         self.view_objects_panel.combo_box.Append(strs_items)
-        self.view_objects_panel.combo_box.object_map = {i: index for i, index in enumerate(view_list)}
+        self.view_objects_panel.combo_box.object_map = dict(enumerate(view_list))
         self.view_objects_panel.combo_box.SetFocus
         self.view_objects_panel.Show()
         self.view_objects_panel.Layout()
