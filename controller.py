@@ -53,6 +53,7 @@ class AppControler:
     def on_change_system(self, system_id):
         """updates system information hide panel, and show main menu"""
         self.system_id = system_id
+        self.system_name = self.db.get_system_name(self.game_id, self.system_id, self.race_id)
         self.Master_object_list = self.db.get_system_data(self.game_id, self.race_id, self.system_name, self.system_id)
         self.make_list_default()
         self.show_main_menu()
@@ -124,7 +125,7 @@ class AppControler:
     def mineral_search(self, search_targets):
         """Find and return list of bodies with the requested minerals amounts and access levels"""
         results = []
-        list_bodies =[i for i in self.Master_object_list if i.object_type == "body"] # Get rid of stuff that can't have minerals
+        list_bodies =[i for i in self.Master_object_list if i.object_type in ("planet", "asteroid", "comet", "moon", "colony")] # Get rid of stuff that can't have minerals
         for i in list_bodies:
             score = 0
             for j in search_targets:
