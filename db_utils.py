@@ -235,7 +235,12 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
             elif row[3] == 8:
                 name = f"temporary wp number {row[4]}"
             list_system_objects.append(BaseSystemObject(name, row[0], row[1], "", "wp"))
-        list_system_objects.append(BaseSystemObject("central star", 0, 0, "", "star"))
+
+        for row in reversed(self.execute("""SELECT Xcor, Ycor, Component
+                                         FROM FCT_Star
+                                         WHERE GameID = ? AND SystemID = ?""", (game_id, system_id))): # Reversed so that the star at the top of the system gets last
+            name = f"{system_name}-{chr(row[2] + 64)}"
+            list_system_objects.append(BaseSystemObject(name, row[0], row[1], "", "star"))
         return list_system_objects
 
     def get_wp_ids(self, game_id, race_id):
@@ -250,3 +255,6 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
         self.cursor.execute("""INSERT INTO FCT_Waypoint (WaypointID, GameID, RaceID, SystemID, OrbitBodyID, CreationTime, Xcor, Ycor, Number, WaypointType, Name, JumpPointID, FleetID)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""", colomns)
         self.connection.commit()
+
+    def get_system_name(self, game_id, system_id, race_id):
+        return self.execute("SELECT  Name FROM FCT_RaceSysSurvey  WHERE GameID = ? AND SystemID = ? AND RaceID = ?", (game_id, system_id, race_id))[0][0]
