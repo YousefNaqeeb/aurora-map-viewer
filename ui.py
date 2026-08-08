@@ -374,9 +374,9 @@ class MainMenu(wx.Panel):
         
         for button in buttons:
             button_sizer.Add(button, 0, wx.EXPAND)
-        
+
         self.sizer.Add(button_sizer, 1, wx.ALL|wx.EXPAND, 20)
-        
+
         self.exit_btn.Bind(wx.EVT_BUTTON, self.on_exit)
         self.change_game_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.get_starting_data())
         self.change_race_btn.Bind(wx.EVT_BUTTON, lambda evt: self.controller.change_race())

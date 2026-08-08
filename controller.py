@@ -125,7 +125,7 @@ class AppControler:
     def mineral_search(self, search_targets):
         """Find and return list of bodies with the requested minerals amounts and access levels"""
         results = []
-        list_bodies =[i for i in self.Master_object_list if i.object_type in ("planet", "asteroid", "comet", "moon", "colony")] # Get rid of stuff that can't have minerals
+        list_bodies =[i for i in self.Master_object_list if i.object_type in ("planet", "asteroid", "comet", "moon")] # Get rid of stuff that can't have minerals
         for i in list_bodies:
             score = 0
             for j in search_targets:
@@ -137,7 +137,7 @@ class AppControler:
                 break
             else:
                 results.append((score, i))
-        sorted_results =sorted(results, reverse=True)
+        sorted_results =sorted(results, key=lambda x: x[0], reverse=True)
         results=[i[1] for i in sorted_results]
         self.ui.display_list_system_objects(results, self.pin_item)
     def handle_closing(self):

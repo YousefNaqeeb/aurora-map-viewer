@@ -61,7 +61,7 @@ class Fleet(BaseSystemObjectWithID):
     def __str__(self):
         if self.player_fleet:
             return f"Fleet {self.name} with ships {self.ships}, at speed {self.speed}km/s, "
-        return f"NPR fleet with ships {self.ships}, at a speed of {self.speed}KM/s"
+        return f"NPR fleet with contacts {self.ships}, at a speed of {self.speed}KM/s"
 
 @dataclass
 class MissileSalvo(BaseSystemObject):

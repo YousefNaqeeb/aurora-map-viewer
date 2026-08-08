@@ -182,9 +182,9 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
                                 WHERE FCT_Fleet.GameID = ? AND FCT_Fleet.SystemID = ? AND FCT_Fleet.RaceID = ?
                                 GROUP BY FCT_Fleet.FleetID""", (game_id, system_id, race_id)):
             if row[5] is None:
-                list_system_objects.append(Fleet(row[1], row[3], row[4], "", "fleet", row[2], "empty fleet", row[0], True))
+                list_system_objects.append(Fleet(row[1], row[3], row[4], "", "fleet", row[0], row[2], "empty fleet", True))
             else:
-                list_system_objects.append(Fleet(row[1], row[3], row[4], "", "fleet", row[2], row[5], row[0], True))
+                list_system_objects.append(Fleet(row[1], row[3], row[4], "", "fleet", row[0], row[2], row[5], True))
         #load player missiles
         list_system_objects +=[MissileSalvo(f"Missile Salvo of {row[6]} missiles", row[3], row[4], "", "missile_salvo", row[5], row[7]) for row in self.execute("""SELECT MissileSalvoID, TargetType, TargetID, xcor, ycor, MissileSpeed, Name,
                                     COUNT(FCT_Missile.SalvoID) as MissileCount
@@ -194,13 +194,13 @@ DROP INDEX IF EXISTS idx_mod_missilesalvo_lookup;""")
             WHERE FCT_MissileSalvo.GameID = ? AND FCT_MissileSalvo.RaceID = ? AND FCT_MissileSalvo.SystemID = ?
             GROUP BY FCT_MissileSalvo.MissileSalvoID""", (game_id, race_id, system_id))]
         #load non player fleets
-        list_system_objects +=[Fleet("", row[0], row[1], "", "fleet", row[2], row[-1], row[3], False) for row in self.execute("""SELECT FCT_Fleet.Xcor, FCT_Fleet.Ycor, FCT_Fleet.speed, FCT_Fleet.FleetID,
+        list_system_objects +=[Fleet("", row[0], row[1], "", "fleet", row[3], row[2], row[-1], False) for row in self.execute("""SELECT FCT_Fleet.Xcor, FCT_Fleet.Ycor, FCT_Fleet.speed, FCT_Fleet.FleetID,
         GROUP_CONCAT(ShipID) as ShipIDs,
         GROUP_CONCAT(ContactName, ', ') as ShipNames
         FROM FCT_Fleet
         JOIN FCT_Ship ON FCT_Fleet.FleetID = FCT_Ship.FleetID
         JOIN FCT_Contacts on ContactID = ShipID
-        WHERE ContactMethod <> 3 AND DetectRaceID = ? AND FCT_Fleet.GameID = ? AND FCT_Fleet.SystemID = ?
+        WHERE DetectRaceID = ? AND FCT_Fleet.GameID = ? AND FCT_Fleet.SystemID = ?
         GROUP BY FCT_Fleet.FleetID""", (race_id, game_id, system_id))]
         #load NPR missile salvos
         list_system_objects +=[MissileSalvo(f"NPR Missile Salvo of {row[6]} missiles", row[3], row[4], "", "missile_salvo", row[5], row[7]) for row in self.execute("""SELECT MissileSalvoID, TargetType, TargetID, FCT_MissileSalvo.xcor, FCT_MissileSalvo.ycor, MissileSpeed, Name,
