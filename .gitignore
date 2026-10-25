@@ -193,7 +193,10 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 #project specific stuff to ignore
+releases/
 *.db
+*.docx
+*.txt
+*.json
+
 db_browser.py
-tables.docx
-test.py
